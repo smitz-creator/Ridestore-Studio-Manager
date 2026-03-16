@@ -440,6 +440,20 @@ function ProductRow({ product, expanded, onToggle, userId }: {
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 mr-1" title={`Gallery: ${product.galleryShots || "–"} | Details: ${product.detailsShots || "–"} | Misc: ${product.miscShots || "–"}`}>
+              <span className="flex items-center gap-0.5">
+                <span className={cn("w-2 h-2 rounded-full", product.galleryShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
+                <span className="text-[10px] text-muted-foreground">G</span>
+              </span>
+              <span className="flex items-center gap-0.5">
+                <span className={cn("w-2 h-2 rounded-full", product.detailsShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
+                <span className="text-[10px] text-muted-foreground">D</span>
+              </span>
+              <span className="flex items-center gap-0.5">
+                <span className={cn("w-2 h-2 rounded-full", product.miscShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
+                <span className="text-[10px] text-muted-foreground">M</span>
+              </span>
+            </div>
             <span className={cn("text-xs px-2 py-0.5 rounded-full", deliveryColor(product.deliveryStatus))}>
               {deliveryLabel(product.deliveryStatus)}
             </span>
