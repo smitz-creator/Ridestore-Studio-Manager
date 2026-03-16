@@ -1,271 +1,568 @@
 import * as React from "react";
-import { useRoute, useLocation } from "wouter";
+import { useRoute, Link } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
-import { 
-  useGetProject, 
-  useDeleteProject, 
-  useUpdateProject,
-  getListProjectsQueryKey,
-  ProjectStatus
-} from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { formatDate, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ProjectForm } from "@/components/forms/project-form";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Calendar, MapPin, DollarSign, User, FileText, 
-  Edit, Trash2, ArrowLeft, Clock, CheckCircle2 
+import {
+  Plus, Search, Filter, X, MessageSquare, AlertTriangle,
+  ChevronDown, ChevronUp, ArrowLeft, Trash2
 } from "lucide-react";
+
+const GENDERS = ["Men", "Women", "Unisex"];
+const DELIVERY_STATUSES = [
+  { value: "not_ordered", label: "Not Ordered" },
+  { value: "ordered", label: "Ordered" },
+  { value: "in_transit", label: "In Transit" },
+  { value: "delayed_at_factory", label: "Delayed at Factory" },
+  { value: "delivered", label: "Delivered/In GBG" },
+];
+const UPLOAD_STATUSES = [
+  { value: "not_started", label: "Not Started" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "uploaded", label: "Uploaded" },
+];
+
+const deliveryLabel = (v: string) => DELIVERY_STATUSES.find(s => s.value === v)?.label || v;
+const uploadLabel = (v: string) => UPLOAD_STATUSES.find(s => s.value === v)?.label || v;
+
+const deliveryColor = (v: string) => {
+  switch (v) {
+    case "delivered": return "bg-green-100 text-green-800";
+    case "delayed_at_factory": return "bg-red-100 text-red-800";
+    case "in_transit": return "bg-blue-100 text-blue-800";
+    case "ordered": return "bg-yellow-100 text-yellow-800";
+    default: return "bg-gray-100 text-gray-800";
+  }
+};
+
+const uploadColor = (v: string) => {
+  switch (v) {
+    case "uploaded": return "bg-green-100 text-green-800";
+    case "in_progress": return "bg-blue-100 text-blue-800";
+    default: return "bg-gray-100 text-gray-800";
+  }
+};
 
 export default function ProjectDetail() {
   const [, params] = useRoute("/projects/:id");
-  const [, setLocation] = useLocation();
+  const id = parseInt(params?.id || "0");
+  const qc = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const projectId = parseInt(params?.id || "0", 10);
 
-  const { data: project, isLoading, isError } = useGetProject(projectId, { query: { enabled: !!projectId } });
-  const deleteMutation = useDeleteProject();
-  const updateMutation = useUpdateProject();
+  const { data: project } = useQuery({ queryKey: ["project", id], queryFn: () => api.getProject(id), enabled: !!id });
 
-  const [isEditOpen, setIsEditOpen] = React.useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState<Record<string, string>>({});
+  const [searchText, setSearchText] = React.useState("");
+  const [showFilters, setShowFilters] = React.useState(false);
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="animate-pulse space-y-8 max-w-5xl mx-auto">
-          <div className="h-32 bg-card rounded-2xl"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2 h-96 bg-card rounded-2xl"></div>
-            <div className="h-96 bg-card rounded-2xl"></div>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const queryParams = React.useMemo(() => {
+    const p: Record<string, string> = { projectId: String(id) };
+    if (filters.gender) p.gender = filters.gender;
+    if (filters.productType) p.productType = filters.productType;
+    if (filters.shortname) p.shortname = filters.shortname;
+    if (filters.deliveryStatus) p.deliveryStatus = filters.deliveryStatus;
+    if (filters.uploadStatus) p.uploadStatus = filters.uploadStatus;
+    if (filters.delayed) p.delayed = "true";
+    if (filters.shotMissing) p.shotMissing = filters.shotMissing;
+    if (searchText.trim()) p.search = searchText.trim();
+    return p;
+  }, [id, filters, searchText]);
 
-  if (isError || !project) {
-    return (
-      <Layout>
-        <div className="text-center py-20">
-          <h2 className="text-2xl font-bold mb-2">Project Not Found</h2>
-          <Button onClick={() => setLocation("/projects")} variant="outline">Back to Projects</Button>
-        </div>
-      </Layout>
-    );
-  }
+  const { data: products, isLoading } = useQuery({
+    queryKey: ["products", queryParams],
+    queryFn: () => api.getProducts(queryParams),
+    enabled: !!id,
+  });
 
-  const handleDelete = () => {
-    deleteMutation.mutate({ id: project.id }, {
-      onSuccess: () => {
-        toast({ title: "Project deleted" });
-        queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-        setLocation("/projects");
-      }
-    });
+  const allProducts = useQuery({
+    queryKey: ["products", { projectId: String(id) }],
+    queryFn: () => api.getProducts({ projectId: String(id) }),
+    enabled: !!id,
+  });
+
+  const productTypes = React.useMemo(() => {
+    if (!allProducts.data) return [];
+    return [...new Set(allProducts.data.map((p: any) => p.productType))].sort();
+  }, [allProducts.data]);
+
+  const shortnames = React.useMemo(() => {
+    if (!allProducts.data) return [];
+    return [...new Set(allProducts.data.map((p: any) => p.shortname))].sort();
+  }, [allProducts.data]);
+
+  const [addOpen, setAddOpen] = React.useState(false);
+  const [addForm, setAddForm] = React.useState({
+    gender: "Men", productType: "", shortname: "", style: "", design: "",
+    keyCode: "", colour: "",
+  });
+
+  const createMut = useMutation({
+    mutationFn: (data: any) => api.createProduct(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      setAddOpen(false);
+      setAddForm({ gender: "Men", productType: "", shortname: "", style: "", design: "", keyCode: "", colour: "" });
+      toast({ title: "Product added" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const handleAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMut.mutate({ ...addForm, projectId: id });
   };
 
-  const handleStatusChange = (newStatus: typeof ProjectStatus[keyof typeof ProjectStatus]) => {
-    updateMutation.mutate(
-      { id: project.id, data: { status: newStatus } },
-      {
-        onSuccess: () => {
-          toast({ title: "Status updated" });
-          queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}`] });
-          queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-        }
-      }
-    );
+  const [expandedId, setExpandedId] = React.useState<number | null>(null);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length + (searchText.trim() ? 1 : 0);
+
+  const clearFilters = () => {
+    setFilters({});
+    setSearchText("");
   };
+
+  if (!project) {
+    return <Layout><p className="text-muted-foreground">Loading...</p></Layout>;
+  }
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto space-y-6">
-        
-        {/* Header Action Bar */}
+      <div className="space-y-4 max-w-6xl mx-auto">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/projects" className="hover:text-foreground flex items-center gap-1">
+            <ArrowLeft className="w-3 h-3" /> Projects
+          </Link>
+          <span>/</span>
+          <span className="text-foreground">{project.name}</span>
+        </div>
+
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => setLocation("/projects")} className="text-muted-foreground -ml-3">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
-              <Edit className="w-4 h-4 mr-2" /> Edit
+          <div>
+            <h1 className="text-2xl font-bold">{project.name}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="secondary">{project.brand}</Badge>
+              <Badge variant="outline">{project.season}</Badge>
+            </div>
+          </div>
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add Product</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Add Product</DialogTitle></DialogHeader>
+              <form onSubmit={handleAddSubmit} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Gender</Label>
+                    <Select value={addForm.gender} onValueChange={v => setAddForm(f => ({ ...f, gender: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {GENDERS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Product Type</Label>
+                    <Input value={addForm.productType} onChange={e => setAddForm(f => ({ ...f, productType: e.target.value }))} placeholder="e.g. Jacket" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Shortname (Model)</Label>
+                  <Input value={addForm.shortname} onChange={e => setAddForm(f => ({ ...f, shortname: e.target.value }))} placeholder="e.g. Akin" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Style</Label>
+                    <Input value={addForm.style} onChange={e => setAddForm(f => ({ ...f, style: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Design</Label>
+                    <Input value={addForm.design} onChange={e => setAddForm(f => ({ ...f, design: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Key Code</Label>
+                    <Input value={addForm.keyCode} onChange={e => setAddForm(f => ({ ...f, keyCode: e.target.value }))} placeholder="e.g. H0851" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Colour</Label>
+                    <Input value={addForm.colour} onChange={e => setAddForm(f => ({ ...f, colour: e.target.value }))} />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full" disabled={createMut.isPending}>
+                  {createMut.isPending ? "Adding..." : "Add Product"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                placeholder="Search products..."
+                className="pl-9"
+              />
+            </div>
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="w-4 h-4 mr-1" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-1 bg-primary-foreground text-primary rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
             </Button>
-            <Button variant="destructive" size="sm" onClick={() => setIsDeleteOpen(true)}>
-              <Trash2 className="w-4 h-4 mr-2" /> Delete
-            </Button>
+            {activeFilterCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="w-4 h-4 mr-1" /> Clear
+              </Button>
+            )}
           </div>
+
+          {showFilters && (
+            <div className="bg-card border rounded-lg p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Gender</Label>
+                <Select value={filters.gender || ""} onValueChange={v => setFilters(f => ({ ...f, gender: v === "all" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {GENDERS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Product Type</Label>
+                <Select value={filters.productType || ""} onValueChange={v => setFilters(f => ({ ...f, productType: v === "all" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {productTypes.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Model</Label>
+                <Select value={filters.shortname || ""} onValueChange={v => setFilters(f => ({ ...f, shortname: v === "all" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {shortnames.map((s: string) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Delivery Status</Label>
+                <Select value={filters.deliveryStatus || ""} onValueChange={v => setFilters(f => ({ ...f, deliveryStatus: v === "all" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {DELIVERY_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Upload Status</Label>
+                <Select value={filters.uploadStatus || ""} onValueChange={v => setFilters(f => ({ ...f, uploadStatus: v === "all" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {UPLOAD_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Shot Missing</Label>
+                <Select value={filters.shotMissing || ""} onValueChange={v => setFilters(f => ({ ...f, shotMissing: v === "all" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any</SelectItem>
+                    <SelectItem value="gallery">Gallery</SelectItem>
+                    <SelectItem value="details">Details</SelectItem>
+                    <SelectItem value="misc">Misc</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end pb-1">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={!!filters.delayed}
+                    onCheckedChange={(c) => setFilters(f => ({ ...f, delayed: c ? "true" : "" }))}
+                  />
+                  Delayed only
+                </label>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Hero Section */}
-        {/* landing page hero scenic photography studio aesthetic */}
-        <div className="relative rounded-3xl overflow-hidden bg-card border border-border shadow-sm">
-          <div className="h-48 w-full bg-secondary/50 relative">
-             <img 
-               src={`${import.meta.env.BASE_URL}images/studio-hero.png`} 
-               alt="Studio vibe" 
-               className="w-full h-full object-cover opacity-60 mix-blend-overlay"
-             />
-             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading products...</p>
+        ) : !products?.length ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>No products found.</p>
           </div>
-          
-          <div className="px-6 md:px-10 pb-8 pt-4 relative -mt-16 sm:-mt-20">
-            <div className="bg-background inline-flex p-1 rounded-full mb-4 shadow-sm">
-               <Badge variant={project.status as any} className="text-sm px-4 py-1.5 capitalize rounded-full shadow-none border-2 border-background">
-                 {project.status.replace('_', ' ')}
-               </Badge>
-            </div>
-            <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground mb-2 drop-shadow-sm">
-              {project.title}
-            </h1>
-            <p className="text-muted-foreground text-lg flex items-center gap-2 capitalize">
-               {project.projectType.replace('_', ' ')} Project
-            </p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">{products.length} product{products.length !== 1 ? "s" : ""}</p>
+            {products.map((product: any) => (
+              <ProductRow
+                key={product.id}
+                product={product}
+                expanded={expandedId === product.id}
+                onToggle={() => setExpandedId(expandedId === product.id ? null : product.id)}
+                userId={user?.id}
+              />
+            ))}
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Main Content (Left, 2 cols) */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-card rounded-2xl p-6 md:p-8 border border-border shadow-sm">
-              <h2 className="text-xl font-display font-semibold mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" /> Overview
-              </h2>
-              <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
-                {project.description ? project.description : <span className="italic">No description provided for this project.</span>}
-              </div>
-            </div>
-
-            <div className="bg-card rounded-2xl p-6 md:p-8 border border-border shadow-sm">
-              <h2 className="text-xl font-display font-semibold mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" /> Internal Notes
-              </h2>
-              <div className="bg-secondary/30 rounded-xl p-5 text-sm text-foreground/80 font-mono whitespace-pre-wrap border border-secondary/50">
-                {project.notes ? project.notes : <span className="italic text-muted-foreground">No notes recorded.</span>}
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar Metadata (Right, 1 col) */}
-          <div className="space-y-6">
-            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
-              <h3 className="text-lg font-display font-semibold mb-6">Details</h3>
-              
-              <div className="space-y-5">
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <User className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Client</p>
-                    <p className="font-medium text-foreground">
-                      {project.clientName ? (
-                        <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => setLocation(`/clients/${project.clientId}`)}>
-                          {project.clientName}
-                        </span>
-                      ) : 'Unassigned'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <Calendar className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Session Date</p>
-                    <p className="font-medium text-foreground">
-                      {project.sessionDate ? formatDate(project.sessionDate, "EEEE, MMMM d, yyyy 'at' h:mm a") : 'TBD'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Location</p>
-                    <p className="font-medium text-foreground">{project.location || 'TBD'}</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <DollarSign className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Budget / Price</p>
-                    <p className="font-medium text-foreground">{formatCurrency(project.price)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Status Update */}
-            <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
-              <h3 className="text-lg font-display font-semibold mb-4">Quick Status</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.values(ProjectStatus).map(s => {
-                  const isActive = project.status === s;
-                  return (
-                    <button
-                      key={s}
-                      disabled={updateMutation.isPending}
-                      onClick={() => handleStatusChange(s)}
-                      className={`px-3 py-2 rounded-lg text-sm text-left font-medium transition-all ${
-                        isActive 
-                          ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary ring-offset-2 ring-offset-background" 
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-transparent hover:border-border"
-                      }`}
-                    >
-                      <span className="capitalize">{s.replace('_', ' ')}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-        </div>
+        )}
       </div>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
-          </DialogHeader>
-          <ProjectForm 
-            initialData={project}
-            onSuccess={() => setIsEditOpen(false)} 
-            onCancel={() => setIsEditOpen(false)} 
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-destructive">Delete Project</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{project.title}</strong>? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={deleteMutation.isPending}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
-              {deleteMutation.isPending ? "Deleting..." : "Delete Permanently"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </Layout>
+  );
+}
+
+function ProductRow({ product, expanded, onToggle, userId }: {
+  product: any; expanded: boolean; onToggle: () => void; userId?: number;
+}) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const updateMut = useMutation({
+    mutationFn: (data: any) => api.updateProduct(product.id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: () => api.deleteProduct(product.id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast({ title: "Product deleted" });
+    },
+  });
+
+  const { data: comments } = useQuery({
+    queryKey: ["comments", product.id],
+    queryFn: () => api.getComments(product.id),
+    enabled: expanded,
+  });
+
+  const [commentText, setCommentText] = React.useState("");
+  const commentMut = useMutation({
+    mutationFn: (data: any) => api.createComment(product.id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["comments", product.id] });
+      setCommentText("");
+    },
+  });
+
+  return (
+    <div className="bg-card border rounded-lg overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full text-left px-4 py-3 hover:bg-secondary/50 transition-colors"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="font-medium text-sm">{product.shortname}</span>
+            {product.keyCode && <span className="text-xs text-muted-foreground font-mono">{product.keyCode}</span>}
+            <Badge variant="outline" className="text-xs">{product.gender}</Badge>
+            <span className="text-xs text-muted-foreground">{product.productType}</span>
+            {product.colour && <span className="text-xs text-muted-foreground">&middot; {product.colour}</span>}
+            {product.factoryDelayed && (
+              <span className="flex items-center gap-1 text-xs text-destructive">
+                <AlertTriangle className="w-3 h-3" /> Delayed
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={cn("text-xs px-2 py-0.5 rounded-full", deliveryColor(product.deliveryStatus))}>
+              {deliveryLabel(product.deliveryStatus)}
+            </span>
+            <span className={cn("text-xs px-2 py-0.5 rounded-full", uploadColor(product.uploadStatus))}>
+              {uploadLabel(product.uploadStatus)}
+            </span>
+            {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+          </div>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="border-t px-4 py-4 space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-sm">
+            <div>
+              <Label className="text-xs text-muted-foreground">Style</Label>
+              <Input
+                defaultValue={product.style || ""}
+                onBlur={e => { if (e.target.value !== (product.style || "")) updateMut.mutate({ style: e.target.value }); }}
+                className="h-8 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Design</Label>
+              <Input
+                defaultValue={product.design || ""}
+                onBlur={e => { if (e.target.value !== (product.design || "")) updateMut.mutate({ design: e.target.value }); }}
+                className="h-8 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Key Code</Label>
+              <Input
+                defaultValue={product.keyCode || ""}
+                onBlur={e => { if (e.target.value !== (product.keyCode || "")) updateMut.mutate({ keyCode: e.target.value }); }}
+                className="h-8 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Colour</Label>
+              <Input
+                defaultValue={product.colour || ""}
+                onBlur={e => { if (e.target.value !== (product.colour || "")) updateMut.mutate({ colour: e.target.value }); }}
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Gallery Shots</Label>
+              <Input
+                defaultValue={product.galleryShots || ""}
+                onBlur={e => updateMut.mutate({ galleryShots: e.target.value })}
+                placeholder="Session/folder name"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Details Shots</Label>
+              <Input
+                defaultValue={product.detailsShots || ""}
+                onBlur={e => updateMut.mutate({ detailsShots: e.target.value })}
+                placeholder="Session/folder name"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Misc Shots</Label>
+              <Input
+                defaultValue={product.miscShots || ""}
+                onBlur={e => updateMut.mutate({ miscShots: e.target.value })}
+                placeholder="Session/folder name"
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Delivery Status</Label>
+              <Select value={product.deliveryStatus} onValueChange={v => updateMut.mutate({ deliveryStatus: v, factoryDelayed: v === "delayed_at_factory" ? true : product.factoryDelayed })}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DELIVERY_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Upload Status</Label>
+              <Select value={product.uploadStatus} onValueChange={v => updateMut.mutate({ uploadStatus: v })}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {UPLOAD_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end pb-1 gap-4">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={product.factoryDelayed}
+                  onCheckedChange={c => updateMut.mutate({ factoryDelayed: !!c })}
+                />
+                Factory Delayed
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => { if (confirm("Delete this product?")) deleteMut.mutate(); }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="border-t pt-4 space-y-3">
+            <h4 className="text-sm font-medium flex items-center gap-1">
+              <MessageSquare className="w-4 h-4" /> Comments
+            </h4>
+            {comments?.length > 0 && (
+              <div className="space-y-2">
+                {comments.map((c: any) => (
+                  <div key={c.id} className="bg-secondary/50 rounded-md p-2.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium">{c.userName}</span>
+                      <span className="text-xs text-muted-foreground">{formatDate(c.createdAt, "MMM d, HH:mm")}</span>
+                    </div>
+                    <p className="text-sm">{c.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Input
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                placeholder="Write a comment..."
+                className="h-8 text-sm"
+                onKeyDown={e => {
+                  if (e.key === "Enter" && commentText.trim() && userId) {
+                    commentMut.mutate({ userId, text: commentText.trim() });
+                  }
+                }}
+              />
+              <Button
+                size="sm"
+                disabled={!commentText.trim() || commentMut.isPending}
+                onClick={() => {
+                  if (commentText.trim() && userId) {
+                    commentMut.mutate({ userId, text: commentText.trim() });
+                  }
+                }}
+              >
+                Send
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
