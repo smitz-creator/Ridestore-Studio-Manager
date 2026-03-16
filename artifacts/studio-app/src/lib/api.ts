@@ -35,4 +35,17 @@ export const api = {
   createSession: (data: any) => fetchJson("/sessions", { method: "POST", body: JSON.stringify(data) }),
   deleteSession: (id: number) => fetchJson(`/sessions/${id}`, { method: "DELETE" }),
   getDashboard: () => fetchJson("/dashboard"),
+  importExcel: async (projectId: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE}/projects/${projectId}/import`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
+    return res.json();
+  },
 };

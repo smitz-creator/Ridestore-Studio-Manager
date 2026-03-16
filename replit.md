@@ -29,6 +29,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 - **Products** (within a project): Each tracks Gender, Product Type, Shortname (model name), Style, Design, Key Code, Colour. Shot types: Gallery Shots, Details Shots, Misc Shots (text fields). Delivery Status (Not Ordered, Ordered, In Transit, Delayed at Factory, Delivered/In GBG). Factory Delayed flag. Upload Status (Not Started, In Progress, Uploaded). Expandable rows with inline editing.
 - **Filtering**: Gender, product type, model name, delivery status, upload status, shot missing (gallery/details/misc), delayed only, text search
 - **Comments**: Any user can comment on a product, showing who and when
+- **Excel Import**: Upload .xlsx files to bulk-import products. Reads sheets "DOPE" (Dope Snow) and "MONTEC" (Montec). Maps columns: Gender, PRODUCT TYPE, SHORTNAME, STYLE, DESIGN, KEY→key_code, COLOUR, GALLERY SHOT, DETAILS SHOT, INSIDE PICS TAKEN→misc_shots, DELIVERY STATUS, UPLOADED, REMARKS. Auto-maps delivery/upload statuses.
 - **Studio Sessions**: Book sessions with date, model name, brand, shot type, notes. Shows upcoming and past sessions.
 
 ### Database Tables
@@ -42,6 +43,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 - `GET /users` — list all users
 - `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id` — project CRUD with product stats
 - `GET/POST /products`, `GET/PATCH/DELETE /products/:id` — product CRUD with filtering
+- `POST /projects/:id/import` — Excel file upload, parses .xlsx and imports products
 - `GET/POST /products/:productId/comments` — comments per product
 - `GET/POST /sessions`, `DELETE /sessions/:id` — studio session CRUD
 - `GET /dashboard` — upcoming/past sessions for dashboard

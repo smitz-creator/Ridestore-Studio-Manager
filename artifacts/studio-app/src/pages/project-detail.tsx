@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Search, Filter, X, MessageSquare, AlertTriangle,
-  ChevronDown, ChevronUp, ArrowLeft, Trash2
+  ChevronDown, ChevronUp, ArrowLeft, Trash2, Upload
 } from "lucide-react";
 
 const GENDERS = ["Men", "Women", "Unisex"];
@@ -126,6 +126,25 @@ export default function ProjectDetail() {
   };
 
   const [expandedId, setExpandedId] = React.useState<number | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = React.useState(false);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const result = await api.importExcel(id, file);
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast({ title: "Import complete", description: `${result.imported} products imported from sheet "${result.sheetUsed}"${result.skipped > 0 ? `, ${result.skipped} rows skipped` : ""}` });
+    } catch (err: any) {
+      toast({ title: "Import failed", description: err.message, variant: "destructive" });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length + (searchText.trim() ? 1 : 0);
 
@@ -157,6 +176,23 @@ export default function ProjectDetail() {
               <Badge variant="outline">{project.season}</Badge>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleImport}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+            >
+              <Upload className="w-4 h-4 mr-1" />
+              {importing ? "Importing..." : "Import Excel"}
+            </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add Product</Button>
@@ -209,6 +245,7 @@ export default function ProjectDetail() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <div className="space-y-3">
