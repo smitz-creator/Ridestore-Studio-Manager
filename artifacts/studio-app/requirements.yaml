@@ -1,0 +1,16 @@
+packages:
+  "date-fns": "For human-readable date formatting and manipulation"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "For Zod validation integration with react-hook-form"
+  "zod": "For form validation schemas"
+  "clsx": "For conditional class name merging"
+  "tailwind-merge": "For merging tailwind classes without conflicts"
+
+images:
+  - path: "artifacts/studio-app/public/images/studio-hero.png"
+    description: "Elegant, minimalist photography studio background with soft natural lighting, neutral beige and warm grey tones, abstract soft focus, highly professional"
+    aspect_ratio: "16:9"
+
+notes:
+  - Using generated hooks from @workspace/api-client-react as specified in implementation notes.
+  - Forms use react-hook-form with Zod validation to handle complex state.
