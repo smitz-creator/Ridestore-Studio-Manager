@@ -26,7 +26,6 @@ function normalizeUploadStatus(raw: string | undefined | null): string {
   if (!raw) return "not_started";
   const lower = raw.toString().toLowerCase().trim();
   if (lower === "yes" || lower === "uploaded" || lower === "done") return "uploaded";
-  if (lower === "in progress" || lower === "wip") return "in_progress";
   return "not_started";
 }
 

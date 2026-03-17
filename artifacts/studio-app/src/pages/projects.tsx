@@ -97,7 +97,7 @@ export default function Projects() {
         ) : (
           <div className="grid gap-3">
             {projects.map((p: any) => {
-              const pct = p.stats.total > 0 ? Math.round((p.stats.uploaded / p.stats.total) * 100) : 0;
+              const { total, uploaded, delayed, notStarted, readyForRetouch, inPostProduction, readyToUpload } = p.stats;
               return (
                 <Link key={p.id} href={`/projects/${p.id}`} className="bg-card border rounded-lg p-4 hover:shadow-sm transition-shadow block">
                   <div className="flex items-center justify-between mb-1">
@@ -106,16 +106,28 @@ export default function Projects() {
                       <Badge variant="secondary" className="text-xs">{p.brand}</Badge>
                       <Badge variant="outline" className="text-xs">{p.season}</Badge>
                     </div>
-                    <span className="text-sm text-muted-foreground">{p.stats.total} products</span>
+                    <span className="text-sm text-muted-foreground">{total} products</span>
                   </div>
-                  <div className="flex items-center gap-3 mt-2">
-                    <Progress value={pct} className="h-2 flex-1" />
-                    <span className="text-xs text-muted-foreground w-12 text-right">{pct}%</span>
+                  {total > 0 && (
+                    <div className="flex w-full h-2 rounded-full overflow-hidden bg-gray-100 mt-2">
+                      {uploaded > 0 && <div className="bg-green-500" style={{ width: `${(uploaded / total) * 100}%` }} />}
+                      {readyToUpload > 0 && <div className="bg-yellow-400" style={{ width: `${(readyToUpload / total) * 100}%` }} />}
+                      {inPostProduction > 0 && <div className="bg-blue-500" style={{ width: `${(inPostProduction / total) * 100}%` }} />}
+                      {readyForRetouch > 0 && <div className="bg-orange-400" style={{ width: `${(readyForRetouch / total) * 100}%` }} />}
+                      {notStarted > 0 && <div className="bg-gray-300" style={{ width: `${(notStarted / total) * 100}%` }} />}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                    {notStarted > 0 && <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full bg-gray-300" />{notStarted} Not Started</span>}
+                    {readyForRetouch > 0 && <span className="flex items-center gap-1 text-[10px] text-orange-600"><span className="w-2 h-2 rounded-full bg-orange-400" />{readyForRetouch} Retouch</span>}
+                    {inPostProduction > 0 && <span className="flex items-center gap-1 text-[10px] text-blue-600"><span className="w-2 h-2 rounded-full bg-blue-500" />{inPostProduction} Post Prod</span>}
+                    {readyToUpload > 0 && <span className="flex items-center gap-1 text-[10px] text-yellow-600"><span className="w-2 h-2 rounded-full bg-yellow-400" />{readyToUpload} Ready</span>}
+                    {uploaded > 0 && <span className="flex items-center gap-1 text-[10px] text-green-600"><span className="w-2 h-2 rounded-full bg-green-500" />{uploaded} Uploaded</span>}
                   </div>
-                  {p.stats.delayed > 0 && (
+                  {delayed > 0 && (
                     <div className="mt-2 flex items-center gap-1 text-xs text-destructive">
                       <AlertTriangle className="w-3 h-3" />
-                      {p.stats.delayed} delayed at factory
+                      {delayed} delayed at factory
                     </div>
                   )}
                 </Link>
