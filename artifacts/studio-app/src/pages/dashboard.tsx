@@ -47,7 +47,7 @@ export default function Dashboard() {
           ) : (
             <div className="grid gap-3">
               {projects.map((p: any) => {
-                const { total, uploaded, delayed, notStarted, readyForRetouch, inPostProduction, readyToUpload } = p.stats;
+                const { total, uploaded, delayed, notStarted, readyForRetouch, inPostProduction, postProductionDone, readyForUpload } = p.stats;
                 return (
                   <Link key={p.id} href={`/projects/${p.id}`} className="bg-card border rounded-lg p-4 hover:shadow-sm transition-shadow block">
                     <div className="flex items-center justify-between mb-2">
@@ -60,7 +60,8 @@ export default function Dashboard() {
                     {total > 0 && (
                       <div className="flex w-full h-2 rounded-full overflow-hidden bg-gray-100">
                         {uploaded > 0 && <div className="bg-green-500" style={{ width: `${(uploaded / total) * 100}%` }} title={`Uploaded: ${uploaded}`} />}
-                        {readyToUpload > 0 && <div className="bg-yellow-400" style={{ width: `${(readyToUpload / total) * 100}%` }} title={`Ready to Upload: ${readyToUpload}`} />}
+                        {readyForUpload > 0 && <div className="bg-yellow-400" style={{ width: `${(readyForUpload / total) * 100}%` }} title={`Ready for Upload: ${readyForUpload}`} />}
+                        {postProductionDone > 0 && <div className="bg-purple-500" style={{ width: `${(postProductionDone / total) * 100}%` }} title={`Post Production - Done: ${postProductionDone}`} />}
                         {inPostProduction > 0 && <div className="bg-blue-500" style={{ width: `${(inPostProduction / total) * 100}%` }} title={`In Post Production: ${inPostProduction}`} />}
                         {readyForRetouch > 0 && <div className="bg-orange-400" style={{ width: `${(readyForRetouch / total) * 100}%` }} title={`Ready for Retouch: ${readyForRetouch}`} />}
                         {notStarted > 0 && <div className="bg-gray-300" style={{ width: `${(notStarted / total) * 100}%` }} title={`Not Started: ${notStarted}`} />}
@@ -70,7 +71,8 @@ export default function Dashboard() {
                       {notStarted > 0 && <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full bg-gray-300" />{notStarted} Not Started</span>}
                       {readyForRetouch > 0 && <span className="flex items-center gap-1 text-[10px] text-orange-600"><span className="w-2 h-2 rounded-full bg-orange-400" />{readyForRetouch} Retouch</span>}
                       {inPostProduction > 0 && <span className="flex items-center gap-1 text-[10px] text-blue-600"><span className="w-2 h-2 rounded-full bg-blue-500" />{inPostProduction} Post Prod</span>}
-                      {readyToUpload > 0 && <span className="flex items-center gap-1 text-[10px] text-yellow-600"><span className="w-2 h-2 rounded-full bg-yellow-400" />{readyToUpload} Ready</span>}
+                      {postProductionDone > 0 && <span className="flex items-center gap-1 text-[10px] text-purple-600"><span className="w-2 h-2 rounded-full bg-purple-500" />{postProductionDone} PP Done</span>}
+                      {readyForUpload > 0 && <span className="flex items-center gap-1 text-[10px] text-yellow-600"><span className="w-2 h-2 rounded-full bg-yellow-400" />{readyForUpload} Ready</span>}
                       {uploaded > 0 && <span className="flex items-center gap-1 text-[10px] text-green-600"><span className="w-2 h-2 rounded-full bg-green-500" />{uploaded} Uploaded</span>}
                     </div>
                     {delayed > 0 && (

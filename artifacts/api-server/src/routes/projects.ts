@@ -12,20 +12,21 @@ router.get("/projects", async (_req, res): Promise<void> => {
       total: sql<number>`count(*)::int`,
       uploaded: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'uploaded')::int`,
       delayed: sql<number>`count(*) filter (where ${productsTable.factoryDelayed} = true)::int`,
-      notStarted: sql<number>`count(*) filter (where ${productsTable.uploadStatus} not in ('uploaded', 'ready_for_retouch', 'in_post_production', 'ready_to_upload'))::int`,
+      notStarted: sql<number>`count(*) filter (where ${productsTable.uploadStatus} not in ('uploaded', 'ready_for_retouch', 'in_post_production', 'post_production_done', 'ready_for_upload'))::int`,
       readyForRetouch: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'ready_for_retouch')::int`,
       inPostProduction: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'in_post_production')::int`,
-      readyToUpload: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'ready_to_upload')::int`,
+      postProductionDone: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'post_production_done')::int`,
+      readyForUpload: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'ready_for_upload')::int`,
     })
     .from(productsTable)
     .groupBy(productsTable.projectId);
-  const stats: Record<number, { total: number; uploaded: number; delayed: number; notStarted: number; readyForRetouch: number; inPostProduction: number; readyToUpload: number }> = {};
+  const stats: Record<number, { total: number; uploaded: number; delayed: number; notStarted: number; readyForRetouch: number; inPostProduction: number; postProductionDone: number; readyForUpload: number }> = {};
   for (const r of rows) {
-    stats[r.projectId] = { total: r.total, uploaded: r.uploaded, delayed: r.delayed, notStarted: r.notStarted, readyForRetouch: r.readyForRetouch, inPostProduction: r.inPostProduction, readyToUpload: r.readyToUpload };
+    stats[r.projectId] = { total: r.total, uploaded: r.uploaded, delayed: r.delayed, notStarted: r.notStarted, readyForRetouch: r.readyForRetouch, inPostProduction: r.inPostProduction, postProductionDone: r.postProductionDone, readyForUpload: r.readyForUpload };
   }
   const result = projects.map(p => ({
     ...p,
-    stats: stats[p.id] || { total: 0, uploaded: 0, delayed: 0, notStarted: 0, readyForRetouch: 0, inPostProduction: 0, readyToUpload: 0 },
+    stats: stats[p.id] || { total: 0, uploaded: 0, delayed: 0, notStarted: 0, readyForRetouch: 0, inPostProduction: 0, postProductionDone: 0, readyForUpload: 0 },
   }));
   res.json(result);
 });

@@ -31,7 +31,8 @@ const UPLOAD_STATUSES = [
   { value: "not_started", label: "Not Started" },
   { value: "ready_for_retouch", label: "Ready for Retouch" },
   { value: "in_post_production", label: "In Post Production" },
-  { value: "ready_to_upload", label: "Ready to Upload" },
+  { value: "post_production_done", label: "Post Production - Done" },
+  { value: "ready_for_upload", label: "Ready for Upload" },
   { value: "uploaded", label: "Uploaded" },
 ];
 
@@ -51,7 +52,8 @@ const deliveryColor = (v: string) => {
 const uploadColor = (v: string) => {
   switch (v) {
     case "uploaded": return "bg-green-100 text-green-800";
-    case "ready_to_upload": return "bg-yellow-100 text-yellow-800";
+    case "ready_for_upload": return "bg-yellow-100 text-yellow-800";
+    case "post_production_done": return "bg-purple-100 text-purple-800";
     case "in_post_production": return "bg-blue-100 text-blue-800";
     case "ready_for_retouch": return "bg-orange-100 text-orange-800";
     default: return "bg-gray-100 text-gray-800";
