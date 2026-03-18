@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, AlertTriangle, Upload, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const BRANDS = ["Dope Snow", "Montec"];
@@ -40,53 +40,200 @@ export default function Projects() {
     createMut.mutate(form);
   };
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [importOpen, setImportOpen] = React.useState(false);
+  const [importFile, setImportFile] = React.useState<File | null>(null);
+  const [importPreview, setImportPreview] = React.useState<{ sheets: { sheetName: string; brand: string; rowCount: number }[]; detectedSeason: string; filename: string } | null>(null);
+  const [selectedSheets, setSelectedSheets] = React.useState<string[]>([]);
+  const [importSeason, setImportSeason] = React.useState("");
+  const [previewing, setPreviewing] = React.useState(false);
+  const [executing, setExecuting] = React.useState(false);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+    setPreviewing(true);
+    try {
+      const preview = await api.importPreview(file);
+      setImportPreview(preview);
+      setSelectedSheets(preview.sheets.map(s => s.sheetName));
+      setImportSeason(preview.detectedSeason || SEASONS[2]);
+      setImportOpen(true);
+    } catch (err: any) {
+      toast({ title: "Import failed", description: err.message, variant: "destructive" });
+    } finally {
+      setPreviewing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSheetToggle = (sheetName: string) => {
+    setSelectedSheets(prev =>
+      prev.includes(sheetName) ? prev.filter(s => s !== sheetName) : [...prev, sheetName]
+    );
+  };
+
+  const handleImportExecute = async () => {
+    if (!importFile || selectedSheets.length === 0 || !importSeason.trim()) return;
+    setExecuting(true);
+    try {
+      const result = await api.importExecute(importFile, selectedSheets, importSeason.trim());
+      const summary = result.results.map(r => `${r.projectName}: ${r.imported} products`).join(", ");
+      toast({ title: "Import complete", description: summary });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setImportOpen(false);
+      setImportFile(null);
+      setImportPreview(null);
+      setSelectedSheets([]);
+      setImportSeason("");
+    } catch (err: any) {
+      toast({ title: "Import failed", description: err.message, variant: "destructive" });
+    } finally {
+      setExecuting(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Projects</h1>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> New Project</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Project</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Project Name</Label>
-                  <Input
-                    value={form.name}
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="e.g. Dope Snow FW25"
-                  />
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={previewing}
+            >
+              <Upload className="w-4 h-4 mr-1" />
+              {previewing ? "Reading file..." : "Import Excel"}
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm"><Plus className="w-4 h-4 mr-1" /> New Project</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Project</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Project Name</Label>
+                    <Input
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="e.g. Dope Snow FW25"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Brand</Label>
+                    <Select value={form.brand} onValueChange={v => setForm(f => ({ ...f, brand: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Season</Label>
+                    <Select value={form.season} onValueChange={v => setForm(f => ({ ...f, season: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={createMut.isPending}>
+                    {createMut.isPending ? "Creating..." : "Create Project"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        <Dialog open={importOpen} onOpenChange={setImportOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5" />
+                Import Excel
+              </DialogTitle>
+            </DialogHeader>
+            {importPreview && (
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  File: <span className="font-medium text-foreground">{importPreview.filename}</span>
                 </div>
-                <div className="space-y-2">
-                  <Label>Brand</Label>
-                  <Select value={form.brand} onValueChange={v => setForm(f => ({ ...f, brand: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+
                 <div className="space-y-2">
                   <Label>Season</Label>
-                  <Select value={form.season} onValueChange={v => setForm(f => ({ ...f, season: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={importSeason}
+                    onChange={e => setImportSeason(e.target.value)}
+                    placeholder="e.g. FW25"
+                  />
+                  {importPreview.detectedSeason && (
+                    <p className="text-xs text-muted-foreground">Auto-detected from filename</p>
+                  )}
                 </div>
-                <Button type="submit" className="w-full" disabled={createMut.isPending}>
-                  {createMut.isPending ? "Creating..." : "Create Project"}
+
+                <div className="space-y-2">
+                  <Label>Sheets to import</Label>
+                  <p className="text-xs text-muted-foreground">Each sheet will create a separate project</p>
+                  <div className="space-y-2 border rounded-lg p-3">
+                    {importPreview.sheets.map(sheet => (
+                      <label key={sheet.sheetName} className="flex items-center gap-3 cursor-pointer">
+                        <Checkbox
+                          checked={selectedSheets.includes(sheet.sheetName)}
+                          onCheckedChange={() => handleSheetToggle(sheet.sheetName)}
+                        />
+                        <div className="flex-1 flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-medium">{sheet.sheetName}</span>
+                            <span className="text-xs text-muted-foreground ml-2">{sheet.brand}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{sheet.rowCount} rows</span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedSheets.length > 0 && importSeason.trim() && (
+                  <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Will create:</p>
+                    {selectedSheets.map(name => {
+                      const sheet = importPreview.sheets.find(s => s.sheetName === name);
+                      return (
+                        <p key={name} className="text-sm">
+                          {sheet?.brand} {importSeason.trim()} <span className="text-muted-foreground">({sheet?.rowCount} rows)</span>
+                        </p>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <Button
+                  className="w-full"
+                  onClick={handleImportExecute}
+                  disabled={executing || selectedSheets.length === 0 || !importSeason.trim()}
+                >
+                  {executing ? "Importing..." : `Import ${selectedSheets.length} sheet${selectedSheets.length !== 1 ? "s" : ""}`}
                 </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>

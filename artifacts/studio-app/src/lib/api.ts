@@ -51,4 +51,32 @@ export const api = {
     }
     return res.json();
   },
+  importPreview: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE}/import/preview`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
+    return res.json() as Promise<{ sheets: { sheetName: string; brand: string; rowCount: number }[]; detectedSeason: string; filename: string }>;
+  },
+  importExecute: async (file: File, selectedSheets: string[], season: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("selectedSheets", JSON.stringify(selectedSheets));
+    formData.append("season", season);
+    const res = await fetch(`${API_BASE}/import/execute`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
+    return res.json() as Promise<{ results: { sheetName: string; brand: string; projectName: string; imported: number; skipped: number }[] }>;
+  },
 };
