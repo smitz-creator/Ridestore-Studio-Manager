@@ -57,7 +57,7 @@ export default function CaptureSessions() {
   const filtered = React.useMemo(() => {
     if (!sessions) return [];
     return sessions.filter((s: any) => {
-      if (filterShotType !== "all" && s.shotType !== filterShotType) return false;
+      if (filterShotType !== "all" && !s.shotTypes.includes(filterShotType)) return false;
       if (searchText && !s.sessionName.toLowerCase().includes(searchText.toLowerCase())) return false;
       return true;
     });
@@ -103,14 +103,13 @@ export default function CaptureSessions() {
         ) : (
           <div className="space-y-2">
             {filtered.map((session: any) => {
-              const key = `${session.sessionName}|||${session.shotType}`;
-              const isExpanded = expandedSession === key;
+              const isExpanded = expandedSession === session.sessionName;
               return (
                 <CaptureSessionCard
-                  key={key}
+                  key={session.sessionName}
                   session={session}
                   isExpanded={isExpanded}
-                  onToggle={() => setExpandedSession(isExpanded ? null : key)}
+                  onToggle={() => setExpandedSession(isExpanded ? null : session.sessionName)}
                 />
               );
             })}
@@ -150,12 +149,19 @@ function CaptureSessionCard({ session, isExpanded, onToggle }: {
   const sessionProducts = React.useMemo(() => {
     if (!products) return [];
     return products.filter((p: any) => {
-      const field = session.shotType === "Gallery" ? p.galleryShots
-        : session.shotType === "Details" ? p.detailsShots
-        : p.miscShots;
-      return field?.trim() === session.sessionName;
+      return p.galleryShots?.trim() === session.sessionName
+        || p.detailsShots?.trim() === session.sessionName
+        || p.miscShots?.trim() === session.sessionName;
     });
   }, [products, session]);
+
+  const getProductShotTypes = (p: any): string[] => {
+    const types: string[] = [];
+    if (p.galleryShots?.trim() === session.sessionName) types.push("Gallery");
+    if (p.detailsShots?.trim() === session.sessionName) types.push("Details");
+    if (p.miscShots?.trim() === session.sessionName) types.push("Misc");
+    return types;
+  };
 
   const statusSummary = Object.entries(session.statusBreakdown as Record<string, number>)
     .sort((a, b) => {
@@ -172,9 +178,11 @@ function CaptureSessionCard({ session, isExpanded, onToggle }: {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             <span className="font-medium text-sm truncate">{session.sessionName}</span>
-            <Badge variant="outline" className={cn("text-xs shrink-0", shotTypeBadge(session.shotType))}>
-              {session.shotType}
-            </Badge>
+            {session.shotTypes.map((type: string) => (
+              <Badge key={type} variant="outline" className={cn("text-xs shrink-0", shotTypeBadge(type))}>
+                {type}
+              </Badge>
+            ))}
             {session.date && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
                 <CalendarIcon className="w-3 h-3" />
@@ -228,6 +236,7 @@ function CaptureSessionCard({ session, isExpanded, onToggle }: {
                     <th className="text-left px-3 py-1.5 font-medium">Product</th>
                     <th className="text-left px-3 py-1.5 font-medium">Key Code</th>
                     <th className="text-left px-3 py-1.5 font-medium">Colour</th>
+                    <th className="text-left px-3 py-1.5 font-medium">Shot Types</th>
                     <th className="text-left px-3 py-1.5 font-medium">Status</th>
                   </tr>
                 </thead>
@@ -237,6 +246,13 @@ function CaptureSessionCard({ session, isExpanded, onToggle }: {
                       <td className="px-3 py-1.5 font-medium">{p.shortname}</td>
                       <td className="px-3 py-1.5 text-muted-foreground font-mono text-xs">{p.keyCode || "–"}</td>
                       <td className="px-3 py-1.5 text-muted-foreground">{p.colour || "–"}</td>
+                      <td className="px-3 py-1.5">
+                        <div className="flex gap-1">
+                          {getProductShotTypes(p).map(t => (
+                            <span key={t} className={cn("text-[10px] px-1.5 py-0.5 rounded-full", shotTypeBadge(t))}>{t}</span>
+                          ))}
+                        </div>
+                      </td>
                       <td className="px-3 py-1.5">
                         <span className={cn("text-xs px-2 py-0.5 rounded-full", statusColor(p.uploadStatus))}>
                           {statusLabel(p.uploadStatus)}

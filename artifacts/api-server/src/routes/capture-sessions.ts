@@ -6,7 +6,7 @@ const router: IRouter = Router();
 
 interface CaptureSession {
   sessionName: string;
-  shotType: "Gallery" | "Details" | "Misc";
+  shotTypes: ("Gallery" | "Details" | "Misc")[];
   productIds: number[];
   count: number;
   date: string | null;
@@ -37,27 +37,35 @@ router.get("/capture-sessions", async (_req, res): Promise<void> => {
   const sessionsMap = new Map<string, CaptureSession>();
 
   for (const p of products) {
-    const entries: Array<{ name: string; type: "Gallery" | "Details" | "Misc" }> = [];
-    if (p.galleryShots?.trim()) entries.push({ name: p.galleryShots.trim(), type: "Gallery" });
-    if (p.detailsShots?.trim()) entries.push({ name: p.detailsShots.trim(), type: "Details" });
-    if (p.miscShots?.trim()) entries.push({ name: p.miscShots.trim(), type: "Misc" });
+    const shotFields: Array<{ name: string; type: "Gallery" | "Details" | "Misc" }> = [];
+    if (p.galleryShots?.trim()) shotFields.push({ name: p.galleryShots.trim(), type: "Gallery" });
+    if (p.detailsShots?.trim()) shotFields.push({ name: p.detailsShots.trim(), type: "Details" });
+    if (p.miscShots?.trim()) shotFields.push({ name: p.miscShots.trim(), type: "Misc" });
 
-    for (const entry of entries) {
-      const key = `${entry.name}|||${entry.type}`;
+    const addedToSession = new Set<string>();
+
+    for (const field of shotFields) {
+      const key = field.name;
       if (!sessionsMap.has(key)) {
         sessionsMap.set(key, {
-          sessionName: entry.name,
-          shotType: entry.type,
+          sessionName: field.name,
+          shotTypes: [],
           productIds: [],
           count: 0,
-          date: parseSessionDate(entry.name),
+          date: parseSessionDate(field.name),
           statusBreakdown: {},
         });
       }
       const session = sessionsMap.get(key)!;
-      session.productIds.push(p.id);
-      session.count++;
-      session.statusBreakdown[p.uploadStatus] = (session.statusBreakdown[p.uploadStatus] || 0) + 1;
+      if (!session.shotTypes.includes(field.type)) {
+        session.shotTypes.push(field.type);
+      }
+      if (!addedToSession.has(key)) {
+        session.productIds.push(p.id);
+        session.count++;
+        session.statusBreakdown[p.uploadStatus] = (session.statusBreakdown[p.uploadStatus] || 0) + 1;
+        addedToSession.add(key);
+      }
     }
   }
 
