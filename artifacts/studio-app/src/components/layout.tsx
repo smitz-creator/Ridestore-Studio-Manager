@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   Calendar,
+  Camera,
   Menu,
   X,
   LogOut,
@@ -20,6 +21,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/capture-sessions", label: "Capture Sessions", icon: Camera },
   { href: "/sessions", label: "Photo Shoots", icon: Calendar },
 ];
 

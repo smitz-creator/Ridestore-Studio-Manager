@@ -29,6 +29,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 - **Products** (within a project): Each tracks Gender, Product Type, Shortname (model name), Style, Design, Key Code, Colour. Shot types: Gallery Shots, Details Shots, Misc Shots (text fields). Delivery Status (Not Ordered, Ordered, In Transit, Delayed at Factory, Delivered/In GBG). Factory Delayed flag. Upload Status is a 6-stage pipeline: Not Started (grey), Ready for Retouch (orange), In Post Production (blue), Post Production - Done (purple), Ready for Upload (yellow), Uploaded (green). Expandable rows with inline editing.
 - **Filtering**: Gender, product type, model name, delivery status, upload status, shot missing (gallery/details/misc), delayed only, text search
 - **Comments**: Any user can comment on a product, showing who and when
+- **Capture Sessions**: Auto-collected from Gallery/Details/Misc shot fields across all products. Groups products by session name and shot type. Shows parsed dates from session names (e.g. 27.01 → Jan 27). Expandable to show product table. "Change status for all" bulk updates all products in a session at once.
 - **Excel Import**: Upload .xlsx files to bulk-import products. Reads sheets "DOPE" (Dope Snow) and "MONTEC" (Montec). Maps columns: Gender, PRODUCT TYPE, SHORTNAME, STYLE, DESIGN, KEY→key_code, COLOUR, GALLERY SHOT, DETAILS SHOT, INSIDE PICS TAKEN→misc_shots, DELIVERY STATUS, UPLOADED, REMARKS. Auto-maps delivery/upload statuses.
 - **Studio Sessions**: Book sessions with date, model name, brand, shot type, notes. Shows upcoming and past sessions.
 
@@ -46,6 +47,8 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 - `POST /projects/:id/import` — Excel file upload, parses .xlsx and imports products
 - `GET/POST /products/:productId/comments` — comments per product
 - `GET/POST /sessions`, `DELETE /sessions/:id` — studio session CRUD
+- `GET /capture-sessions` — auto-collected sessions from product shot fields with status breakdowns
+- `PATCH /capture-sessions/bulk-status` — bulk update upload status for multiple products
 - `GET /dashboard` — upcoming/past sessions for dashboard
 
 ### Frontend Pages

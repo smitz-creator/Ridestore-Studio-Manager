@@ -9,6 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
 import Sessions from "@/pages/sessions";
+import CaptureSessions from "@/pages/capture-sessions";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +32,7 @@ function AppRoutes() {
       <Route path="/" component={Dashboard} />
       <Route path="/projects" component={Projects} />
       <Route path="/projects/:id" component={ProjectDetail} />
+      <Route path="/capture-sessions" component={CaptureSessions} />
       <Route path="/sessions" component={Sessions} />
       <Route component={NotFound} />
     </Switch>

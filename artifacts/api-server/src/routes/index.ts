@@ -6,6 +6,7 @@ import productsRouter from "./products";
 import commentsRouter from "./comments";
 import sessionsRouter from "./sessions";
 import importRouter from "./import";
+import captureSessionsRouter from "./capture-sessions";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(productsRouter);
 router.use(commentsRouter);
 router.use(sessionsRouter);
 router.use(importRouter);
+router.use(captureSessionsRouter);
 
 export default router;

@@ -35,6 +35,9 @@ export const api = {
   createSession: (data: any) => fetchJson("/sessions", { method: "POST", body: JSON.stringify(data) }),
   deleteSession: (id: number) => fetchJson(`/sessions/${id}`, { method: "DELETE" }),
   getDashboard: () => fetchJson("/dashboard"),
+  getCaptureSessions: () => fetchJson("/capture-sessions"),
+  bulkUpdateStatus: (productIds: number[], uploadStatus: string) =>
+    fetchJson("/capture-sessions/bulk-status", { method: "PATCH", body: JSON.stringify({ productIds, uploadStatus }) }),
   importExcel: async (projectId: number, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
