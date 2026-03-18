@@ -35,7 +35,7 @@ export default function Sessions() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpen(false);
       setForm({ date: "", modelName: "", brand: BRANDS[0], shotType: SHOT_TYPES[0], notes: "" });
-      toast({ title: "Session booked" });
+      toast({ title: "Photo shoot booked" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -45,7 +45,7 @@ export default function Sessions() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sessions"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast({ title: "Session deleted" });
+      toast({ title: "Photo shoot deleted" });
     },
   });
 
@@ -63,13 +63,13 @@ export default function Sessions() {
     <Layout>
       <div className="space-y-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Studio Sessions</h1>
+          <h1 className="text-2xl font-bold">Studio Photo Shoots</h1>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Book Session</Button>
+              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Book a Photo Shoot</Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Book Studio Session</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>Book a Photo Shoot</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Date</Label>
@@ -104,7 +104,7 @@ export default function Sessions() {
                   <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any notes..." />
                 </div>
                 <Button type="submit" className="w-full" disabled={createMut.isPending}>
-                  {createMut.isPending ? "Booking..." : "Book Session"}
+                  {createMut.isPending ? "Booking..." : "Book Photo Shoot"}
                 </Button>
               </form>
             </DialogContent>
@@ -121,7 +121,7 @@ export default function Sessions() {
                 Upcoming ({upcoming.length})
               </h2>
               {upcoming.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No upcoming sessions.</p>
+                <p className="text-sm text-muted-foreground">No upcoming photo shoots.</p>
               ) : (
                 <div className="grid gap-2">
                   {[...upcoming].reverse().map((s: any) => (
@@ -132,9 +132,9 @@ export default function Sessions() {
             </div>
 
             <div className="space-y-3">
-              <h2 className="text-lg font-semibold">Past Sessions ({past.length})</h2>
+              <h2 className="text-lg font-semibold">Past Photo Shoots ({past.length})</h2>
               {past.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No past sessions.</p>
+                <p className="text-sm text-muted-foreground">No past photo shoots.</p>
               ) : (
                 <div className="grid gap-2">
                   {past.map((s: any) => (

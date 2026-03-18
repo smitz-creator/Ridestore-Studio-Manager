@@ -20,7 +20,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/sessions", label: "Sessions", icon: Calendar },
+  { href: "/sessions", label: "Photo Shoots", icon: Calendar },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

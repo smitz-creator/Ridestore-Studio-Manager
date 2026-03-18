@@ -92,12 +92,12 @@ export default function Dashboard() {
           <div className="space-y-3">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              Upcoming Sessions
+              Upcoming Photo Shoots
             </h2>
             {dLoading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
             ) : !dashboard?.upcoming?.length ? (
-              <p className="text-sm text-muted-foreground">No upcoming sessions.</p>
+              <p className="text-sm text-muted-foreground">No upcoming photo shoots.</p>
             ) : (
               <div className="space-y-2">
                 {dashboard.upcoming.map((s: any) => (
@@ -117,11 +117,11 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold">Past Sessions</h2>
+            <h2 className="text-lg font-semibold">Past Photo Shoots</h2>
             {dLoading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
             ) : !dashboard?.past?.length ? (
-              <p className="text-sm text-muted-foreground">No past sessions yet.</p>
+              <p className="text-sm text-muted-foreground">No past photo shoots yet.</p>
             ) : (
               <div className="space-y-2">
                 {dashboard.past.slice(0, 5).map((s: any) => (
