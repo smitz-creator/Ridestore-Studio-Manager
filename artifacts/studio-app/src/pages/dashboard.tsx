@@ -59,21 +59,21 @@ export default function Dashboard() {
                     </div>
                     {total > 0 && (
                       <div className="flex w-full h-2.5 rounded-full overflow-hidden bg-gray-100">
-                        {uploaded > 0 && <div className="bg-green-500" style={{ width: `${(uploaded / total) * 100}%` }} title={`Uploaded: ${uploaded}`} />}
-                        {readyForUpload > 0 && <div className="bg-yellow-400" style={{ width: `${(readyForUpload / total) * 100}%` }} title={`Ready for Upload: ${readyForUpload}`} />}
-                        {postProductionDone > 0 && <div className="bg-purple-500" style={{ width: `${(postProductionDone / total) * 100}%` }} title={`Post Production - Done: ${postProductionDone}`} />}
-                        {inPostProduction > 0 && <div className="bg-blue-500" style={{ width: `${(inPostProduction / total) * 100}%` }} title={`In Post Production: ${inPostProduction}`} />}
-                        {readyForRetouch > 0 && <div className="bg-orange-400" style={{ width: `${(readyForRetouch / total) * 100}%` }} title={`Ready for Retouch: ${readyForRetouch}`} />}
-                        {notStarted > 0 && <div className="bg-gray-300" style={{ width: `${(notStarted / total) * 100}%` }} title={`Not Started: ${notStarted}`} />}
+                        {uploaded > 0 && <div style={{ width: `${(uploaded / total) * 100}%`, backgroundColor: "#22c55e" }} title={`Uploaded: ${uploaded}`} />}
+                        {readyForUpload > 0 && <div style={{ width: `${(readyForUpload / total) * 100}%`, backgroundColor: "#eab308" }} title={`Ready for Upload: ${readyForUpload}`} />}
+                        {postProductionDone > 0 && <div style={{ width: `${(postProductionDone / total) * 100}%`, backgroundColor: "#8b5cf6" }} title={`Post Production - Done: ${postProductionDone}`} />}
+                        {inPostProduction > 0 && <div style={{ width: `${(inPostProduction / total) * 100}%`, backgroundColor: "#3b82f6" }} title={`In Post Production: ${inPostProduction}`} />}
+                        {readyForRetouch > 0 && <div style={{ width: `${(readyForRetouch / total) * 100}%`, backgroundColor: "#f97316" }} title={`Ready for Retouch: ${readyForRetouch}`} />}
+                        {notStarted > 0 && <div style={{ width: `${(notStarted / total) * 100}%`, backgroundColor: "#9ca3af" }} title={`Not Started: ${notStarted}`} />}
                       </div>
                     )}
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-2 gap-y-1 mt-2">
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />{notStarted} Not Started</span>
-                      <span className="flex items-center gap-1 text-[10px] text-orange-600"><span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />{readyForRetouch} Retouch</span>
-                      <span className="flex items-center gap-1 text-[10px] text-blue-600"><span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />{inPostProduction} Post Prod</span>
-                      <span className="flex items-center gap-1 text-[10px] text-purple-600"><span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />{postProductionDone} PP Done</span>
-                      <span className="flex items-center gap-1 text-[10px] text-yellow-600"><span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />{readyForUpload} Ready</span>
-                      <span className="flex items-center gap-1 text-[10px] text-green-600"><span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />{uploaded} Uploaded</span>
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#9ca3af" }} />{notStarted} Not Started</span>
+                      <span className="flex items-center gap-1 text-[10px]" style={{ color: "#ea580c" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#f97316" }} />{readyForRetouch} Retouch</span>
+                      <span className="flex items-center gap-1 text-[10px]" style={{ color: "#2563eb" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#3b82f6" }} />{inPostProduction} Post Prod</span>
+                      <span className="flex items-center gap-1 text-[10px]" style={{ color: "#7c3aed" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#8b5cf6" }} />{postProductionDone} PP Done</span>
+                      <span className="flex items-center gap-1 text-[10px]" style={{ color: "#ca8a04" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#eab308" }} />{readyForUpload} Ready</span>
+                      <span className="flex items-center gap-1 text-[10px]" style={{ color: "#16a34a" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#22c55e" }} />{uploaded} Uploaded</span>
                     </div>
                     {total > 0 && (
                       <div className="flex items-center gap-3 mt-2 pt-2 border-t">

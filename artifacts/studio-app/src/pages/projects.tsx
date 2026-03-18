@@ -110,21 +110,21 @@ export default function Projects() {
                   </div>
                   {total > 0 && (
                     <div className="flex w-full h-2 rounded-full overflow-hidden bg-gray-100 mt-2">
-                      {uploaded > 0 && <div className="bg-green-500" style={{ width: `${(uploaded / total) * 100}%` }} />}
-                      {readyForUpload > 0 && <div className="bg-yellow-400" style={{ width: `${(readyForUpload / total) * 100}%` }} />}
-                      {postProductionDone > 0 && <div className="bg-purple-500" style={{ width: `${(postProductionDone / total) * 100}%` }} />}
-                      {inPostProduction > 0 && <div className="bg-blue-500" style={{ width: `${(inPostProduction / total) * 100}%` }} />}
-                      {readyForRetouch > 0 && <div className="bg-orange-400" style={{ width: `${(readyForRetouch / total) * 100}%` }} />}
-                      {notStarted > 0 && <div className="bg-gray-300" style={{ width: `${(notStarted / total) * 100}%` }} />}
+                      {uploaded > 0 && <div style={{ width: `${(uploaded / total) * 100}%`, backgroundColor: "#22c55e" }} />}
+                      {readyForUpload > 0 && <div style={{ width: `${(readyForUpload / total) * 100}%`, backgroundColor: "#eab308" }} />}
+                      {postProductionDone > 0 && <div style={{ width: `${(postProductionDone / total) * 100}%`, backgroundColor: "#8b5cf6" }} />}
+                      {inPostProduction > 0 && <div style={{ width: `${(inPostProduction / total) * 100}%`, backgroundColor: "#3b82f6" }} />}
+                      {readyForRetouch > 0 && <div style={{ width: `${(readyForRetouch / total) * 100}%`, backgroundColor: "#f97316" }} />}
+                      {notStarted > 0 && <div style={{ width: `${(notStarted / total) * 100}%`, backgroundColor: "#9ca3af" }} />}
                     </div>
                   )}
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                    {notStarted > 0 && <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full bg-gray-300" />{notStarted} Not Started</span>}
-                    {readyForRetouch > 0 && <span className="flex items-center gap-1 text-[10px] text-orange-600"><span className="w-2 h-2 rounded-full bg-orange-400" />{readyForRetouch} Retouch</span>}
-                    {inPostProduction > 0 && <span className="flex items-center gap-1 text-[10px] text-blue-600"><span className="w-2 h-2 rounded-full bg-blue-500" />{inPostProduction} Post Prod</span>}
-                    {postProductionDone > 0 && <span className="flex items-center gap-1 text-[10px] text-purple-600"><span className="w-2 h-2 rounded-full bg-purple-500" />{postProductionDone} PP Done</span>}
-                    {readyForUpload > 0 && <span className="flex items-center gap-1 text-[10px] text-yellow-600"><span className="w-2 h-2 rounded-full bg-yellow-400" />{readyForUpload} Ready</span>}
-                    {uploaded > 0 && <span className="flex items-center gap-1 text-[10px] text-green-600"><span className="w-2 h-2 rounded-full bg-green-500" />{uploaded} Uploaded</span>}
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-2 gap-y-1 mt-2">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#9ca3af" }} />{notStarted} Not Started</span>
+                    <span className="flex items-center gap-1 text-[10px]" style={{ color: "#ea580c" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#f97316" }} />{readyForRetouch} Retouch</span>
+                    <span className="flex items-center gap-1 text-[10px]" style={{ color: "#2563eb" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#3b82f6" }} />{inPostProduction} Post Prod</span>
+                    <span className="flex items-center gap-1 text-[10px]" style={{ color: "#7c3aed" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#8b5cf6" }} />{postProductionDone} PP Done</span>
+                    <span className="flex items-center gap-1 text-[10px]" style={{ color: "#ca8a04" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#eab308" }} />{readyForUpload} Ready</span>
+                    <span className="flex items-center gap-1 text-[10px]" style={{ color: "#16a34a" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#22c55e" }} />{uploaded} Uploaded</span>
                   </div>
                   {delayed > 0 && (
                     <div className="mt-2 flex items-center gap-1 text-xs text-destructive">
