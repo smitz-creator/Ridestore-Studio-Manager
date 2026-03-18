@@ -130,9 +130,8 @@ function CaptureSessionCard({ session, isExpanded, onToggle }: {
   const { toast } = useToast();
 
   const { data: products } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["all-products"],
     queryFn: () => api.getProducts(),
-    enabled: isExpanded,
   });
 
   const bulkMut = useMutation({
@@ -140,6 +139,7 @@ function CaptureSessionCard({ session, isExpanded, onToggle }: {
       api.bulkUpdateStatus(productIds, uploadStatus),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["capture-sessions"] });
+      qc.invalidateQueries({ queryKey: ["all-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
       toast({ title: `Updated ${vars.productIds.length} products to ${statusLabel(vars.uploadStatus)}` });
