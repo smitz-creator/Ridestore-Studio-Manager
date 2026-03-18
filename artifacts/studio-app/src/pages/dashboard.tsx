@@ -47,7 +47,7 @@ export default function Dashboard() {
           ) : (
             <div className="grid gap-3">
               {projects.map((p: any) => {
-                const { total, uploaded, delayed, notStarted, readyForRetouch, inPostProduction, postProductionDone, readyForUpload } = p.stats;
+                const { total, uploaded, delayed, notStarted, readyForRetouch, inPostProduction, postProductionDone, readyForUpload, hasGallery, hasDetails, hasMisc } = p.stats;
                 return (
                   <Link key={p.id} href={`/projects/${p.id}`} className="bg-card border rounded-lg p-4 hover:shadow-sm transition-shadow block">
                     <div className="flex items-center justify-between mb-2">
@@ -58,7 +58,7 @@ export default function Dashboard() {
                       <span className="text-xs text-muted-foreground">{uploaded}/{total} uploaded</span>
                     </div>
                     {total > 0 && (
-                      <div className="flex w-full h-2 rounded-full overflow-hidden bg-gray-100">
+                      <div className="flex w-full h-2.5 rounded-full overflow-hidden bg-gray-100">
                         {uploaded > 0 && <div className="bg-green-500" style={{ width: `${(uploaded / total) * 100}%` }} title={`Uploaded: ${uploaded}`} />}
                         {readyForUpload > 0 && <div className="bg-yellow-400" style={{ width: `${(readyForUpload / total) * 100}%` }} title={`Ready for Upload: ${readyForUpload}`} />}
                         {postProductionDone > 0 && <div className="bg-purple-500" style={{ width: `${(postProductionDone / total) * 100}%` }} title={`Post Production - Done: ${postProductionDone}`} />}
@@ -67,14 +67,31 @@ export default function Dashboard() {
                         {notStarted > 0 && <div className="bg-gray-300" style={{ width: `${(notStarted / total) * 100}%` }} title={`Not Started: ${notStarted}`} />}
                       </div>
                     )}
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                      {notStarted > 0 && <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full bg-gray-300" />{notStarted} Not Started</span>}
-                      {readyForRetouch > 0 && <span className="flex items-center gap-1 text-[10px] text-orange-600"><span className="w-2 h-2 rounded-full bg-orange-400" />{readyForRetouch} Retouch</span>}
-                      {inPostProduction > 0 && <span className="flex items-center gap-1 text-[10px] text-blue-600"><span className="w-2 h-2 rounded-full bg-blue-500" />{inPostProduction} Post Prod</span>}
-                      {postProductionDone > 0 && <span className="flex items-center gap-1 text-[10px] text-purple-600"><span className="w-2 h-2 rounded-full bg-purple-500" />{postProductionDone} PP Done</span>}
-                      {readyForUpload > 0 && <span className="flex items-center gap-1 text-[10px] text-yellow-600"><span className="w-2 h-2 rounded-full bg-yellow-400" />{readyForUpload} Ready</span>}
-                      {uploaded > 0 && <span className="flex items-center gap-1 text-[10px] text-green-600"><span className="w-2 h-2 rounded-full bg-green-500" />{uploaded} Uploaded</span>}
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-2 gap-y-1 mt-2">
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />{notStarted} Not Started</span>
+                      <span className="flex items-center gap-1 text-[10px] text-orange-600"><span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />{readyForRetouch} Retouch</span>
+                      <span className="flex items-center gap-1 text-[10px] text-blue-600"><span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />{inPostProduction} Post Prod</span>
+                      <span className="flex items-center gap-1 text-[10px] text-purple-600"><span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />{postProductionDone} PP Done</span>
+                      <span className="flex items-center gap-1 text-[10px] text-yellow-600"><span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />{readyForUpload} Ready</span>
+                      <span className="flex items-center gap-1 text-[10px] text-green-600"><span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />{uploaded} Uploaded</span>
                     </div>
+                    {total > 0 && (
+                      <div className="flex items-center gap-3 mt-2 pt-2 border-t">
+                        <span className="text-[10px] text-muted-foreground font-medium">Shots:</span>
+                        <span className="flex items-center gap-1 text-[10px]">
+                          <span className={`w-2 h-2 rounded-full ${hasGallery === total ? "bg-green-500" : hasGallery > 0 ? "bg-yellow-400" : "bg-gray-300"}`} />
+                          <span className="text-muted-foreground">G {hasGallery}/{total}</span>
+                        </span>
+                        <span className="flex items-center gap-1 text-[10px]">
+                          <span className={`w-2 h-2 rounded-full ${hasDetails === total ? "bg-green-500" : hasDetails > 0 ? "bg-yellow-400" : "bg-gray-300"}`} />
+                          <span className="text-muted-foreground">D {hasDetails}/{total}</span>
+                        </span>
+                        <span className="flex items-center gap-1 text-[10px]">
+                          <span className={`w-2 h-2 rounded-full ${hasMisc === total ? "bg-green-500" : hasMisc > 0 ? "bg-yellow-400" : "bg-gray-300"}`} />
+                          <span className="text-muted-foreground">M {hasMisc}/{total}</span>
+                        </span>
+                      </div>
+                    )}
                     {delayed > 0 && (
                       <div className="mt-2 flex items-center gap-1 text-xs text-destructive">
                         <AlertTriangle className="w-3 h-3" />
