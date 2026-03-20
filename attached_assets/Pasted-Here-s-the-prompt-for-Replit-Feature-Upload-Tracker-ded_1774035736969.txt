@@ -1,0 +1,45 @@
+Here's the prompt for Replit:
+
+---
+
+**Feature: Upload Tracker — dedicated view for Oskar**
+
+Add a new page called **"Upload"** that is only visible to the user **Oskar** (based on login name). This is the final step in the pipeline where finished assets get uploaded. Add it to the navigation bar as the last button (after Naming) — styled similarly to Selection/Retouch/Naming as a highlighted button.
+
+**The Upload page works exactly like the Selection page, but for the "Ready for Upload" status:**
+
+1. **Show only sessions/products at status "Ready for Upload"**, grouped by session name (Gallery Shots field).
+
+2. **Each session group shows:**
+   - Session name as header
+   - Product count + progress (e.g., "21 products · 0/21 uploaded")
+   - Progress bar per session
+   - **"Complete Session" button** to tick all products at once
+
+3. **Inside each session group**, list products with:
+   - Key Code (SKU) prominently
+   - Color
+   - Model name + product type (smaller)
+   - Individual checkbox to mark upload as done
+
+4. **Carry Over products are auto-ticked** on page load — same behavior as all other trackers. They already have assets uploaded from the previous season.
+
+5. **When a product is ticked off** (individually or via Complete Session), its Upload Status changes to **"Uploaded"**.
+
+6. **Sessions disappear from the page** once all products are moved to "Uploaded".
+
+7. **Overall progress bar at the top** of the page: "X/Y products uploaded" across all sessions currently at "Ready for Upload".
+
+8. **Page header text:**
+   - Title: **"Upload"**
+   - Subtitle: "Upload finished assets and mark products as complete"
+
+9. **Keep it clean and focused** — same simple layout as Selection and Naming. No filters, no bulk actions, just sessions to work through and checkboxes to tick.
+
+---
+
+Now let me update memory with all the new trackers:Memory updated. Paste that prompt into Replit and Oskar gets the final piece of the pipeline. That means you now have the **full end-to-end workflow tracked**:
+
+**Shoot** (all users) → **Selection** (Philip) → **Retouch** (Smitz) → **Naming** (Oskar + Agnes) → **Upload** (Oskar)
+
+Each person sees exactly what they need, nothing more. Pretty solid for one day's work.

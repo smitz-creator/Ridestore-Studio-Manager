@@ -14,6 +14,7 @@ import {
   MousePointerClick,
   Paintbrush,
   FileText,
+  Upload,
 } from "lucide-react";
 
 interface NavItem {
@@ -125,6 +126,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="hidden sm:inline">Naming</span>
             </Link>
           )}
+          {user?.name === "Oskar" && (
+            <Link
+              href="/upload"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                location === "/upload"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+              )}
+            >
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Upload</span>
+            </Link>
+          )}
           <span className="text-sm font-medium">{user?.name}</span>
           <button
             onClick={logout}
@@ -196,6 +211,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               <FileText className="w-4 h-4" />
               Naming
+            </Link>
+          )}
+          {user?.name === "Oskar" && (
+            <Link
+              href="/upload"
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                location === "/upload"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              <Upload className="w-4 h-4" />
+              Upload
             </Link>
           )}
         </div>

@@ -14,6 +14,7 @@ import ShootingMode from "@/pages/shooting-mode";
 import Selection from "@/pages/selection";
 import Retouch from "@/pages/retouch";
 import Naming from "@/pages/naming";
+import UploadTracker from "@/pages/upload";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +42,7 @@ function AppRoutes() {
       <Route path="/selection" component={Selection} />
       <Route path="/retouch" component={Retouch} />
       <Route path="/naming" component={Naming} />
+      <Route path="/upload" component={UploadTracker} />
       <Route path="/sessions" component={Sessions} />
       <Route component={NotFound} />
     </Switch>
