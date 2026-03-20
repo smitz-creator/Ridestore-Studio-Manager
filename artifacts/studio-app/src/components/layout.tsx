@@ -18,7 +18,6 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
-  visibleTo?: string[];
 }
 
 const navItems: NavItem[] = [
@@ -26,7 +25,6 @@ const navItems: NavItem[] = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/capture-sessions", label: "Capture Sessions", icon: Camera },
   { href: "/sessions", label: "Photo Shoots", icon: Calendar },
-  { href: "/selection", label: "Selection", icon: MousePointerClick, visibleTo: ["Philip"] },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -50,7 +48,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </button>
           <span className="font-semibold text-lg tracking-tight">Ridestore Studio</span>
           <nav className="hidden sm:flex items-center gap-1 ml-6">
-            {navItems.filter(item => !item.visibleTo || item.visibleTo.includes(user?.name ?? "")).map((item) => {
+            {navItems.map((item) => {
               const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
               return (
                 <Link
@@ -83,6 +81,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Aperture className="w-4 h-4" />
             <span className="hidden sm:inline">Shoot</span>
           </Link>
+          {user?.name === "Philip" && (
+            <Link
+              href="/selection"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                location === "/selection"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-pink-100 text-pink-800 hover:bg-pink-200"
+              )}
+            >
+              <MousePointerClick className="w-4 h-4" />
+              <span className="hidden sm:inline">Selection</span>
+            </Link>
+          )}
           <span className="text-sm font-medium">{user?.name}</span>
           <button
             onClick={logout}
@@ -96,7 +108,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {isMobileMenuOpen && (
         <div className="sm:hidden border-b bg-card px-4 py-2 space-y-1">
-          {navItems.filter(item => !item.visibleTo || item.visibleTo.includes(user?.name ?? "")).map((item) => {
+          {navItems.map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
             return (
               <Link
@@ -114,6 +126,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          {user?.name === "Philip" && (
+            <Link
+              href="/selection"
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                location === "/selection"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              <MousePointerClick className="w-4 h-4" />
+              Selection
+            </Link>
+          )}
         </div>
       )}
 
