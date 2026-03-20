@@ -32,6 +32,7 @@ export default function Selection() {
   const qc = useQueryClient();
   const [collapsedSessions, setCollapsedSessions] = React.useState<Set<string>>(new Set());
   const [completedIds, setCompletedIds] = React.useState<Set<number>>(new Set());
+  const autoPromotedRef = React.useRef<Set<number>>(new Set());
 
   React.useEffect(() => {
     if (user && user.name !== "Philip") navigate("/");
@@ -84,18 +85,26 @@ export default function Selection() {
   const selectedCount = completedIds.size;
 
   React.useEffect(() => {
+    const coIds = allProducts.filter(p => p.isCarryOver).map(p => p.id);
+    const newCoIds = coIds.filter(id => !autoPromotedRef.current.has(id));
+
     setCompletedIds(prev => {
       const remaining = new Set(allProducts.map(p => p.id));
       const next = new Set<number>();
       for (const id of prev) {
         if (remaining.has(id)) next.add(id);
       }
-      for (const p of allProducts) {
-        if (p.isCarryOver) next.add(p.id);
-      }
+      for (const id of coIds) next.add(id);
       return next;
     });
-  }, [allProducts]);
+
+    if (newCoIds.length > 0) {
+      for (const id of newCoIds) autoPromotedRef.current.add(id);
+      api.bulkUpdateStatus(newCoIds, "ready_for_retouch").then(() => {
+        qc.invalidateQueries({ queryKey: ["products"] });
+      });
+    }
+  }, [allProducts, qc]);
 
   const toggleProduct = async (id: number) => {
     const product = allProducts.find(p => p.id === id);
