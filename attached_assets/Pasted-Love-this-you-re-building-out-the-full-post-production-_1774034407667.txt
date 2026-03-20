@@ -1,0 +1,83 @@
+Love this — you're building out the full post-production pipeline now. Here's the prompt for Replit:
+
+---
+
+**Feature: Retouch Tracker — dedicated view for Smitz**
+
+Add a new section/page called **"Retouch"** that is only visible to the user **Smitz** (based on login name). This is Smitz's post-production workflow hub. Add it to the navigation bar after the "Selection" button.
+
+**The page has TWO sections:**
+
+---
+
+### SECTION 1: "Ready for Retouch" (top of page)
+
+1. **Show only sessions/products at status "Ready for Retouch"**, grouped by session name (Gallery Shots field).
+
+2. **Each session group shows:**
+   - Session name as header
+   - Product count + progress (e.g., "21 products · 0/21 retouched")
+   - Progress bar per session
+   - "Complete Session" button to tick all at once
+
+3. **Inside each session group**, list products with:
+   - Key Code (SKU) prominently
+   - Color
+   - Model name + product type (smaller)
+   - Individual checkbox to tick off
+
+4. **Carry Over products are auto-ticked** on page load (same behavior as Selection mode) — they've already been retouched in a previous season.
+
+5. **When a product is ticked off** (individually or via Complete Session), its Upload Status changes to **"In Post Production"**.
+
+6. **Sessions disappear from this section** once all products are moved to "In Post Production".
+
+---
+
+### SECTION 2: "In Post Production" (below, on the same page)
+
+This section shows sessions that have moved to "In Post Production" status. These are sessions waiting for external retouching.
+
+7. **Group products by session name**, same as above.
+
+8. **Each session card shows:**
+   - Session name as header
+   - Product count
+   - **Two action buttons: "Send to Pixelz" and "Send to Masking"** — these are mutually exclusive choices for the session. Clicking one sets a label/tag on the session indicating where it was sent (e.g., "Sent to Pixelz" or "Sent to Masking" badge on the session header).
+   - After choosing Pixelz or Masking, the session enters **"Waiting" mode** — show a visual indicator like a yellow "Waiting" badge or a clock icon.
+
+9. **Carry Over handling in "In Post Production":**
+   - **Highlight Carry Over products** within the session — make their Key Code text bold and a distinct color (e.g., blue or orange) so they stand out.
+   - **Add a copy icon next to each CO product's Key Code** so Smitz can copy individual CO key codes.
+   - **Add a "Copy all Carry Over Key Codes" button** at the session level that copies all CO product Key Codes in the session (one per line) to clipboard. These need to be sourced separately.
+   - **Add a "Carry Overs Sourced" checkbox/toggle** on the session. When ticked, it means the carry-over images have been gathered. If the session ONLY contains carry-over products, ticking "Carry Overs Sourced" puts the session in waiting mode (same as Pixelz/Masking).
+
+10. **"Done" button/checkbox per session** — when ticked, ALL products in that session move to status **"Post Production - Done"**. The session then disappears from the "In Post Production" section.
+
+11. **A session can only be marked "Done" when:**
+    - It has been sent to Pixelz or Masking (or only contains carry-overs with "Carry Overs Sourced" ticked), AND
+    - It is currently in Waiting mode
+    - Show the "Done" button as disabled/greyed out until these conditions are met.
+
+---
+
+### Overall page layout:
+
+```
+Retouch
+Post-production workflow
+
+[Overall Progress: X products in retouch pipeline]
+
+--- READY FOR RETOUCH ---
+[Session cards with tick-off, same as Selection mode]
+
+--- IN POST PRODUCTION ---
+[Session cards with Pixelz/Masking buttons, CO highlighting, Done button]
+```
+
+12. **Style the "Retouch" nav button** similarly to "Selection" — dark/highlighted button, only visible for Smitz.
+
+---
+
+Paste that into Replit and you'll have the full retouch pipeline tracked. Let me know how it turns out — this is a big one.

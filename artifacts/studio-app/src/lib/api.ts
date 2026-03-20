@@ -66,6 +66,9 @@ export const api = {
     }
     return res.json() as Promise<{ sheets: { sheetName: string; brand: string; rowCount: number }[]; detectedSeason: string; filename: string }>;
   },
+  getRetouchSessions: () => fetchJson("/retouch-sessions"),
+  updateRetouchSession: (sessionName: string, data: any) =>
+    fetchJson(`/retouch-sessions/${encodeURIComponent(sessionName)}`, { method: "PATCH", body: JSON.stringify(data) }),
   importExecute: async (file: File, selectedSheets: string[], season: string) => {
     const formData = new FormData();
     formData.append("file", file);

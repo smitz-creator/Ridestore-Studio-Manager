@@ -37,6 +37,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 - **Studio Sessions ("Photo Shoots")**: Book sessions with date, model name, brand, shot type, notes.
 - **Shooting Mode**: Multi-step guided workflow for live studio shoot days. Step 1: Pick Brand → Gender → Product Type with big tappable buttons, auto-generates session name (format: BRAND_GENDER_TYPE_FWyy_DD.MM). Step 2: Select products (filtered by brand/gender/type, excludes factory-delayed, model filter). Step 3: Live tracking with G/D/M/CO toggle buttons per product card. Step 4: Session complete — closing session auto-moves ticked products to "Ready for Selection", reverts unticked products to previous status. Carry Over products auto-show CO ticked.
 - **Selection Mode** (Philip only): Dedicated view at `/selection` for reviewing shot sessions. Shows products at "Ready for Selection" grouped by Gallery Shots session name. Collapsible session cards with progress indicators. Individual tick-off or "Complete Session" bulk action moves products to "Ready for Retouch". Sessions disappear when all products are selected. Access-guarded: nav item hidden and page redirects non-Philip users.
+- **Retouch Tracker** (Smitz only): Dedicated post-production hub at `/retouch` with two sections. **Ready for Retouch**: tick-off products (individually or "Complete Session") to move to "In Post Production"; CO products auto-promoted. **In Post Production**: session cards with "Send to Pixelz"/"Send to Masking" buttons (sets badge + "Waiting" state), carry-over product highlighting (blue bold key codes), copy CO key codes (individual + bulk), "Carry Overs Sourced" checkbox, "Done" button (enabled only when session is in Waiting mode) moves all products to "Post Production Done". Session metadata stored in `retouch_sessions` DB table.
 
 ### Database Tables
 - `users`: id, name, created_at
@@ -44,6 +45,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 - `products`: id, project_id (FK), gender, product_type, shortname, style, design, key_code, colour, gallery_shots, details_shots, misc_shots, delivery_status, factory_delayed, is_reshoot, is_carry_over, upload_status, created_at, updated_at
 - `comments`: id, product_id (FK), user_id (FK), text, created_at
 - `studio_sessions`: id, date, model_name, brand, shot_type, notes, created_by_id, created_at
+- `retouch_sessions`: id, session_name (unique), sent_to (pixelz/masking/null), carry_overs_sourced (bool), created_at, updated_at
 
 ### API Endpoints (under /api)
 - `GET /users` — list all users

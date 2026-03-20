@@ -7,6 +7,7 @@ import commentsRouter from "./comments";
 import sessionsRouter from "./sessions";
 import importRouter from "./import";
 import captureSessionsRouter from "./capture-sessions";
+import retouchSessionsRouter from "./retouch-sessions";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(commentsRouter);
 router.use(sessionsRouter);
 router.use(importRouter);
 router.use(captureSessionsRouter);
+router.use(retouchSessionsRouter);
 
 export default router;

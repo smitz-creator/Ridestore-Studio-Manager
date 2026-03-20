@@ -12,6 +12,7 @@ import Sessions from "@/pages/sessions";
 import CaptureSessions from "@/pages/capture-sessions";
 import ShootingMode from "@/pages/shooting-mode";
 import Selection from "@/pages/selection";
+import Retouch from "@/pages/retouch";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,7 @@ function AppRoutes() {
       <Route path="/capture-sessions" component={CaptureSessions} />
       <Route path="/shooting-mode" component={ShootingMode} />
       <Route path="/selection" component={Selection} />
+      <Route path="/retouch" component={Retouch} />
       <Route path="/sessions" component={Sessions} />
       <Route component={NotFound} />
     </Switch>
