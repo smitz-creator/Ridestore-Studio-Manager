@@ -27,7 +27,9 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 - **Dashboard**: Project progress bars (8-stage pipeline), shot coverage stats, factory-delayed warnings, upcoming/past studio sessions
 - **Projects**: Each has a name, brand (Dope Snow/Montec), and season (e.g. FW25). Shows product count and upload progress with 8-stage segmented bar
 - **Products** (within a project): Each tracks Gender, Product Type, Shortname (model name), Style, Design, Key Code, Colour. Shot types: Gallery Shots, Details Shots, Misc Shots (text fields). Delivery Status (Not Ordered, Ordered, In Transit, Delayed at Factory, Delivered/In GBG). Factory Delayed flag. Upload Status is an 8-stage pipeline: Not Started (grey #9ca3af) → In the Studio (cyan #06b6d4) → Ready for Selection (pink #ec4899) → Ready for Retouch (orange #f97316) → In Post Production (blue #3b82f6) → Post Production - Done (purple #8b5cf6) → Ready for Upload (yellow #eab308) → Uploaded (green #22c55e). Expandable rows with inline editing.
-- **Filtering**: Gender, product type, model name, delivery status, upload status, shot missing (gallery/details/misc), delayed only, text search
+- **Filtering**: Gender, product type, model name, delivery status, upload status, shot missing (gallery/details/misc/missing required), delayed only, reshoot only, text search
+- **Bulk Selection & Editing**: Select All (respects current filters), individual row checkboxes, floating action bar with Change Upload Status, Change Delivery Status, Toggle Factory Delayed, Remove Reshoot, Clear Selection
+- **Missing Shots Quality Gate**: When upload status is set to "Ready for Upload" or beyond, products missing required shots (Gallery for all types; Gallery + Details for Jackets/Pants) are automatically reverted to "Not Started" with an amber badge. Works for both single and bulk updates. Badge auto-disappears when shots are filled in.
 - **Comments**: Any user can comment on a product, showing who and when
 - **Capture Sessions**: Auto-collected from Gallery/Details/Misc shot fields across all products. Groups products by session name and shot type. Shows parsed dates from session names. Expandable to show product table. "Change status for all" bulk updates.
 - **Excel Import**: Upload .xlsx files to bulk-import products. Multi-sheet support: previews all sheets, lets user pick which to import, auto-detects season from filename. Creates one project per selected sheet. Sheet names map to brands: DOPE→Dope Snow, MONTEC→Montec. Also supports per-project import.
@@ -52,6 +54,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 - `GET/POST /sessions`, `DELETE /sessions/:id` — studio session CRUD
 - `GET /capture-sessions` — auto-collected sessions from product shot fields with status breakdowns
 - `PATCH /capture-sessions/bulk-status` — bulk update upload status for multiple products (supports all 8 statuses)
+- `PATCH /products/bulk-update` — bulk update products (upload status, delivery status, factory delayed, reshoot). Validates required shots when setting to "Ready for Upload" — reverts products missing shots to "Not Started" and returns reverted product details.
 - `GET /dashboard` — upcoming/past sessions for dashboard
 
 ### Frontend Pages

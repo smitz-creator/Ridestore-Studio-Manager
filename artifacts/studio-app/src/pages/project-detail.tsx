@@ -64,6 +64,17 @@ const uploadColor = (v: string) => {
   }
 };
 
+const REQUIRES_DETAILS_TYPES = ["jacket", "pants", "pant"];
+
+function getMissingShots(product: { productType: string; galleryShots: string | null; detailsShots: string | null }): string | null {
+  const needsGallery = !product.galleryShots?.trim();
+  const needsDetails = REQUIRES_DETAILS_TYPES.some(t => product.productType.toLowerCase().includes(t)) && !product.detailsShots?.trim();
+  if (needsGallery && needsDetails) return "Missing Gallery & Details";
+  if (needsGallery) return "Missing Gallery";
+  if (needsDetails) return "Missing Details";
+  return null;
+}
+
 export default function ProjectDetail() {
   const [, params] = useRoute("/projects/:id");
   const id = parseInt(params?.id || "0");
@@ -145,11 +156,17 @@ export default function ProjectDetail() {
   const bulkMut = useMutation({
     mutationFn: ({ productIds, updates }: { productIds: number[]; updates: Record<string, any> }) =>
       api.bulkUpdateProducts(productIds, updates),
-    onSuccess: (_, vars) => {
+    onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
-      const count = vars.productIds.length;
-      toast({ title: `Updated ${count} product${count !== 1 ? "s" : ""}` });
+      if (data.reverted > 0) {
+        toast({
+          title: `${data.updated} product${data.updated !== 1 ? "s" : ""} updated. ${data.reverted} moved back to Not Started due to missing shots.`,
+          description: data.revertedProducts.map((p: any) => `${p.shortname}${p.keyCode ? ` ${p.keyCode}` : ""}: ${p.reason}`).join("; "),
+        });
+      } else {
+        toast({ title: `Updated ${data.updated} product${data.updated !== 1 ? "s" : ""}` });
+      }
       setSelectedIds(new Set());
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -418,6 +435,7 @@ export default function ProjectDetail() {
                   <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Any</SelectItem>
+                    <SelectItem value="required">Missing Required</SelectItem>
                     <SelectItem value="gallery">Gallery</SelectItem>
                     <SelectItem value="details">Details</SelectItem>
                     <SelectItem value="misc">Misc</SelectItem>
@@ -546,9 +564,16 @@ function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect 
 
   const updateMut = useMutation({
     mutationFn: (data: any) => api.updateProduct(product.id, data),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
+      if (data._reverted) {
+        toast({
+          title: `${product.shortname}${product.keyCode ? ` ${product.keyCode}` : ""} moved back to Not Started`,
+          description: data._missingReason,
+          variant: "destructive",
+        });
+      }
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -601,6 +626,9 @@ function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect 
                 <span className="flex items-center gap-1 text-xs text-destructive">
                   <AlertTriangle className="w-3 h-3" /> Delayed
                 </span>
+              )}
+              {getMissingShots(product) && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">{getMissingShots(product)}</span>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">

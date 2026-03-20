@@ -1,8 +1,21 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, or, isNull, inArray } from "drizzle-orm";
+import { eq, and, ilike, or, isNull, inArray, sql } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 
 const router: IRouter = Router();
+
+const REQUIRES_DETAILS = ["Jacket", "Pants", "Pant"];
+
+function isMissingRequired(product: { productType: string; galleryShots: string | null; detailsShots: string | null }): string | null {
+  const needsGallery = !product.galleryShots?.trim();
+  const needsDetails = REQUIRES_DETAILS.some(t => product.productType.toLowerCase().includes(t.toLowerCase())) && !product.detailsShots?.trim();
+  if (needsGallery && needsDetails) return "Missing Gallery & Details";
+  if (needsGallery) return "Missing Gallery";
+  if (needsDetails) return "Missing Details";
+  return null;
+}
+
+const UPLOAD_AT_OR_BEYOND_READY = ["ready_for_upload", "uploaded"];
 
 router.get("/products", async (req, res): Promise<void> => {
   const { projectId, gender, productType, shortname, deliveryStatus, uploadStatus, delayed, reshoot, shotMissing, search } = req.query;
@@ -21,6 +34,19 @@ router.get("/products", async (req, res): Promise<void> => {
   if (shotMissing === "gallery") conditions.push(or(isNull(productsTable.galleryShots), eq(productsTable.galleryShots, "")));
   if (shotMissing === "details") conditions.push(or(isNull(productsTable.detailsShots), eq(productsTable.detailsShots, "")));
   if (shotMissing === "misc") conditions.push(or(isNull(productsTable.miscShots), eq(productsTable.miscShots, "")));
+  if (shotMissing === "required") {
+    const galleryEmpty = or(isNull(productsTable.galleryShots), sql`trim(${productsTable.galleryShots}) = ''`);
+    const detailsEmpty = or(isNull(productsTable.detailsShots), sql`trim(${productsTable.detailsShots}) = ''`);
+    const isJacketPants = or(
+      ilike(productsTable.productType, "%jacket%"),
+      ilike(productsTable.productType, "%pants%"),
+      ilike(productsTable.productType, "%pant%"),
+    );
+    conditions.push(or(
+      galleryEmpty!,
+      and(isJacketPants!, detailsEmpty!),
+    ));
+  }
 
   if (search) {
     const s = `%${search}%`;
@@ -95,8 +121,39 @@ router.patch("/products/bulk-update", async (req, res): Promise<void> => {
     res.status(400).json({ error: "No valid fields to update" });
     return;
   }
+
+  if (setData.uploadStatus && UPLOAD_AT_OR_BEYOND_READY.includes(setData.uploadStatus)) {
+    const products = await db.select().from(productsTable).where(inArray(productsTable.id, productIds));
+    const passIds: number[] = [];
+    const failProducts: { id: number; shortname: string; keyCode: string | null; reason: string }[] = [];
+
+    for (const p of products) {
+      const missing = isMissingRequired(p);
+      if (missing) {
+        failProducts.push({ id: p.id, shortname: p.shortname, keyCode: p.keyCode, reason: missing });
+      } else {
+        passIds.push(p.id);
+      }
+    }
+
+    if (passIds.length > 0) {
+      await db.update(productsTable).set(setData).where(inArray(productsTable.id, passIds));
+    }
+    if (failProducts.length > 0) {
+      const failIds = failProducts.map(f => f.id);
+      await db.update(productsTable).set({ uploadStatus: "not_started" }).where(inArray(productsTable.id, failIds));
+    }
+
+    res.json({
+      updated: passIds.length,
+      reverted: failProducts.length,
+      revertedProducts: failProducts,
+    });
+    return;
+  }
+
   await db.update(productsTable).set(setData).where(inArray(productsTable.id, productIds));
-  res.json({ updated: productIds.length });
+  res.json({ updated: productIds.length, reverted: 0, revertedProducts: [] });
 });
 
 router.get("/products/:id", async (req, res): Promise<void> => {
@@ -116,8 +173,22 @@ router.patch("/products/:id", async (req, res): Promise<void> => {
     if (key in req.body) updates[key] = req.body[key];
   }
   if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No valid fields to update" }); return; }
+
   const [product] = await db.update(productsTable).set(updates).where(eq(productsTable.id, id)).returning();
   if (!product) { res.status(404).json({ error: "Not found" }); return; }
+
+  if (updates.uploadStatus && UPLOAD_AT_OR_BEYOND_READY.includes(updates.uploadStatus)) {
+    const missing = isMissingRequired(product);
+    if (missing) {
+      const [reverted] = await db.update(productsTable)
+        .set({ uploadStatus: "not_started" })
+        .where(eq(productsTable.id, id))
+        .returning();
+      res.json({ ...reverted, _reverted: true, _missingReason: missing });
+      return;
+    }
+  }
+
   res.json(product);
 });
 

@@ -1,0 +1,28 @@
+That's a smart quality gate — catch it at the end of the pipeline and loop it back automatically. Here's the prompt for Replit:
+
+---
+
+**Feature: Auto-catch products missing required shots at "Ready for Upload"**
+
+When a product's Upload Status is changed to "Ready for Upload", the app should check if it's missing any required shot types based on its product type. Jackets and Pants require both Gallery and Details shots. All other types require at least Gallery.
+
+Here's the logic:
+
+1. **When a product's status is changed to "Ready for Upload" (or beyond)**, check if any required shot session/folder name fields are empty:
+   - If the product type is Jacket or Pants → both Gallery Shots and Details Shots fields must have a value
+   - All other types → Gallery Shots field must have a value
+
+2. **If a required shot is missing:**
+   - Automatically set the product's Upload Status back to **"Not Started"**
+   - Add a visible badge on the product row that says **"Missing Gallery"**, **"Missing Details"**, or **"Missing Gallery & Details"** depending on what's empty. Style it similar to the Reshoot badge but in orange/amber color so it stands out differently.
+   - Show a toast notification explaining what happened: "Adept H0851 moved back to Not Started — missing Details shots"
+
+3. **Remove the badge automatically** when the missing shot field gets filled in (i.e., when a session/folder name is entered into the previously empty Gallery Shots or Details Shots field). The badge should disappear as soon as the required fields are no longer empty — no manual action needed.
+
+4. **This should also work with bulk status changes.** If 50 products are bulk-changed to "Ready for Upload" and 5 of them are missing required shots, those 5 get sent back to "Not Started" with the badge, and the other 45 proceed normally. Show a summary toast: "45 products moved to Ready for Upload. 5 products moved back to Not Started due to missing shots."
+
+5. **Add a filter option** in the "Shot Missing" dropdown called **"Missing Required"** that shows only products currently flagged with the missing shots badge.
+
+---
+
+This way the pipeline self-corrects — nothing slips through to upload without its shots done, and as soon as those products get picked up in a new session and the field gets filled, they're automatically unblocked. Paste that in and let me know how it goes.
