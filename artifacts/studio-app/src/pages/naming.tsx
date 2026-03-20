@@ -166,7 +166,7 @@ export default function Naming() {
             <span className="text-sm font-medium">Overall Progress</span>
             <span className="text-sm font-semibold">{namedCount}/{totalProducts} products named</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div className="w-full bg-zinc-700 rounded-full h-2.5">
             <div
               className="bg-yellow-500 h-2.5 rounded-full transition-all duration-300"
               style={{ width: totalProducts > 0 ? `${(namedCount / totalProducts) * 100}%` : "0%" }}
@@ -210,7 +210,7 @@ export default function Naming() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-24 bg-gray-200 rounded-full h-1.5">
+                  <div className="w-24 bg-zinc-700 rounded-full h-1.5">
                     <div
                       className="bg-yellow-500 h-1.5 rounded-full transition-all"
                       style={{ width: `${(doneInSession / session.products.length) * 100}%` }}
@@ -238,7 +238,7 @@ export default function Naming() {
                     return (
                       <div
                         key={p.id}
-                        className={`flex items-center gap-4 px-4 py-3 transition-colors ${isDone ? "bg-yellow-50 opacity-60" : "hover:bg-secondary/20"}`}
+                        className={`flex items-center gap-4 px-4 py-3 transition-colors ${isDone ? "bg-yellow-900/20 opacity-60" : "hover:bg-secondary/20"}`}
                       >
                         <button
                           onClick={() => toggleProduct(p.id)}
@@ -246,7 +246,7 @@ export default function Naming() {
                           className={`w-7 h-7 rounded-md flex items-center justify-center border-2 transition-all flex-shrink-0 ${
                             isDone
                               ? "bg-yellow-600 border-yellow-600 text-white"
-                              : "border-gray-300 hover:border-yellow-500 text-transparent hover:text-yellow-500"
+                              : "border-zinc-600 hover:border-yellow-500 text-transparent hover:text-yellow-500"
                           }`}
                         >
                           <Check className="w-4 h-4" />
@@ -256,7 +256,7 @@ export default function Naming() {
                             <span className="font-mono font-bold text-sm">{p.keyCode}</span>
                             <span className="text-sm text-muted-foreground">{p.colour}</span>
                             {p.isCarryOver && (
-                              <span className="text-[10px] font-medium bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">CO</span>
+                              <span className="text-[10px] font-medium bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded">CO</span>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{p.shortname} · {p.productType}</p>

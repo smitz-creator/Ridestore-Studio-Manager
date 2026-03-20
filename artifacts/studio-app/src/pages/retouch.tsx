@@ -255,7 +255,7 @@ export default function Retouch() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="w-24 bg-gray-200 rounded-full h-1.5">
+                      <div className="w-24 bg-zinc-700 rounded-full h-1.5">
                         <div className="bg-orange-500 h-1.5 rounded-full transition-all" style={{ width: `${(doneInSession / session.products.length) * 100}%` }} />
                       </div>
                       {!allDone && (
@@ -275,11 +275,11 @@ export default function Retouch() {
                       {session.products.map(p => {
                         const isDone = completedIds.has(p.id);
                         return (
-                          <div key={p.id} className={`flex items-center gap-4 px-4 py-3 transition-colors ${isDone ? "bg-orange-50 opacity-60" : "hover:bg-secondary/20"}`}>
+                          <div key={p.id} className={`flex items-center gap-4 px-4 py-3 transition-colors ${isDone ? "bg-orange-900/20 opacity-60" : "hover:bg-secondary/20"}`}>
                             <button
                               onClick={() => toggleProduct(p.id)}
                               disabled={bulkUpdateMut.isPending || (isDone && !p.isCarryOver)}
-                              className={`w-7 h-7 rounded-md flex items-center justify-center border-2 transition-all flex-shrink-0 ${isDone ? "bg-orange-600 border-orange-600 text-white" : "border-gray-300 hover:border-orange-500 text-transparent hover:text-orange-500"}`}
+                              className={`w-7 h-7 rounded-md flex items-center justify-center border-2 transition-all flex-shrink-0 ${isDone ? "bg-orange-600 border-orange-600 text-white" : "border-zinc-600 hover:border-orange-500 text-transparent hover:text-orange-500"}`}
                             >
                               <Check className="w-4 h-4" />
                             </button>
@@ -287,7 +287,7 @@ export default function Retouch() {
                               <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-sm">{p.keyCode}</span>
                                 <span className="text-sm text-muted-foreground">{p.colour}</span>
-                                {p.isCarryOver && <span className="text-[10px] font-medium bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">CO</span>}
+                                {p.isCarryOver && <span className="text-[10px] font-medium bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded">CO</span>}
                               </div>
                               <p className="text-xs text-muted-foreground truncate">{p.shortname} · {p.productType}</p>
                             </div>
@@ -342,12 +342,12 @@ export default function Retouch() {
                         <h3 className="font-semibold text-sm flex items-center gap-2">
                           {session.sessionName}
                           {meta?.sentTo && (
-                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${meta.sentTo === "pixelz" ? "bg-purple-100 text-purple-700" : "bg-teal-100 text-teal-700"}`}>
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${meta.sentTo === "pixelz" ? "bg-purple-900/30 text-purple-400" : "bg-teal-900/30 text-teal-400"}`}>
                               Sent to {meta.sentTo === "pixelz" ? "Pixelz" : "Masking"}
                             </span>
                           )}
                           {isWaiting && (
-                            <span className="text-[10px] font-medium bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <span className="text-[10px] font-medium bg-yellow-900/30 text-yellow-400 px-1.5 py-0.5 rounded flex items-center gap-1">
                               <Clock className="w-3 h-3" /> Waiting
                             </span>
                           )}
@@ -380,7 +380,7 @@ export default function Retouch() {
                       <button
                         onClick={() => handleDoneSession(session.products)}
                         disabled={!canDone || bulkUpdateMut.isPending}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${canDone ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${canDone ? "bg-green-600 text-white hover:bg-green-700" : "bg-zinc-700 text-zinc-500 cursor-not-allowed"}`}
                       >
                         Done
                       </button>
@@ -390,16 +390,16 @@ export default function Retouch() {
                   {!isCollapsed && (
                     <div className="border-t">
                       {coProducts.length > 0 && (
-                        <div className="px-4 py-2 bg-blue-50 border-b flex items-center justify-between">
+                        <div className="px-4 py-2 bg-blue-900/20 border-b flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={meta?.carryOversSourced || false}
                                 onChange={(e) => handleCarryOversSourced(session.sessionName, e.target.checked)}
-                                className="w-4 h-4 rounded border-gray-300"
+                                className="w-4 h-4 rounded border-zinc-600"
                               />
-                              <span className="text-xs font-medium text-blue-700">Carry Overs Sourced</span>
+                              <span className="text-xs font-medium text-blue-400">Carry Overs Sourced</span>
                             </label>
                           </div>
                           <button
@@ -407,7 +407,7 @@ export default function Retouch() {
                               const codes = coProducts.map(p => p.keyCode).filter(Boolean).join("\n");
                               copyToClipboard(codes);
                             }}
-                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded hover:bg-blue-200 transition-colors"
+                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-400 bg-blue-900/30 rounded hover:bg-blue-900/50 transition-colors"
                           >
                             <Copy className="w-3 h-3" />
                             Copy all CO Key Codes
@@ -419,11 +419,11 @@ export default function Retouch() {
                           <div key={p.id} className="flex items-center gap-4 px-4 py-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className={`font-mono text-sm ${p.isCarryOver ? "font-bold text-blue-700" : "font-bold"}`}>{p.keyCode}</span>
+                                <span className={`font-mono text-sm ${p.isCarryOver ? "font-bold text-blue-400" : "font-bold"}`}>{p.keyCode}</span>
                                 <span className="text-sm text-muted-foreground">{p.colour}</span>
                                 {p.isCarryOver && (
                                   <>
-                                    <span className="text-[10px] font-medium bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">CO</span>
+                                    <span className="text-[10px] font-medium bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded">CO</span>
                                     <button
                                       onClick={() => copyToClipboard(p.keyCode || "")}
                                       className="p-0.5 text-blue-500 hover:text-blue-700 transition-colors"

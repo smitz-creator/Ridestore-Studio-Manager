@@ -15,12 +15,12 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
         outline: "text-foreground",
         // Custom domain variants
-        inquiry: "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-        booked: "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-        in_progress: "border-transparent bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-        editing: "border-transparent bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
-        delivered: "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-        archived: "border-transparent bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+        inquiry: "border-transparent bg-blue-900/30 text-blue-400",
+        booked: "border-transparent bg-amber-900/30 text-amber-400",
+        in_progress: "border-transparent bg-purple-900/30 text-purple-400",
+        editing: "border-transparent bg-indigo-900/30 text-indigo-400",
+        delivered: "border-transparent bg-emerald-900/30 text-emerald-400",
+        archived: "border-transparent bg-zinc-800 text-zinc-400",
       },
     },
     defaultVariants: {

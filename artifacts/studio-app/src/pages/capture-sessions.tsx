@@ -23,23 +23,23 @@ const statusLabel = (v: string) => UPLOAD_STATUSES.find(s => s.value === v)?.lab
 
 const statusColor = (v: string) => {
   switch (v) {
-    case "uploaded": return "bg-green-100 text-green-800";
-    case "ready_for_upload": return "bg-yellow-100 text-yellow-800";
-    case "post_production_done": return "bg-purple-100 text-purple-800";
-    case "in_post_production": return "bg-blue-100 text-blue-800";
-    case "ready_for_retouch": return "bg-orange-100 text-orange-800";
-    case "ready_for_selection": return "bg-pink-100 text-pink-800";
-    case "in_the_studio": return "bg-cyan-100 text-cyan-800";
-    default: return "bg-gray-100 text-gray-800";
+    case "uploaded": return "bg-green-900/30 text-green-400";
+    case "ready_for_upload": return "bg-yellow-900/30 text-yellow-400";
+    case "post_production_done": return "bg-purple-900/30 text-purple-400";
+    case "in_post_production": return "bg-blue-900/30 text-blue-400";
+    case "ready_for_retouch": return "bg-orange-900/30 text-orange-400";
+    case "ready_for_selection": return "bg-pink-900/30 text-pink-400";
+    case "in_the_studio": return "bg-cyan-900/30 text-cyan-400";
+    default: return "bg-zinc-800 text-zinc-400";
   }
 };
 
 const shotTypeBadge = (type: string) => {
   switch (type) {
-    case "Gallery": return "bg-indigo-100 text-indigo-800";
-    case "Details": return "bg-teal-100 text-teal-800";
-    case "Misc": return "bg-pink-100 text-pink-800";
-    default: return "bg-gray-100 text-gray-800";
+    case "Gallery": return "bg-indigo-900/30 text-indigo-400";
+    case "Details": return "bg-teal-900/30 text-teal-400";
+    case "Misc": return "bg-pink-900/30 text-pink-400";
+    default: return "bg-zinc-800 text-zinc-400";
   }
 };
 
@@ -251,7 +251,7 @@ function CaptureSessionCard({ session, isExpanded, onToggle }: {
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium">{p.shortname}</span>
                           {p.isReshoot && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800">Reshoot</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-900/30 text-orange-400">Reshoot</span>
                           )}
                         </div>
                       </td>

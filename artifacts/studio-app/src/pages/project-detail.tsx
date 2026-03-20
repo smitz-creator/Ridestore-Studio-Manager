@@ -43,24 +43,24 @@ const uploadLabel = (v: string) => UPLOAD_STATUSES.find(s => s.value === v)?.lab
 
 const deliveryColor = (v: string) => {
   switch (v) {
-    case "delivered": return "bg-green-100 text-green-800";
-    case "delayed_at_factory": return "bg-red-100 text-red-800";
-    case "in_transit": return "bg-blue-100 text-blue-800";
-    case "ordered": return "bg-yellow-100 text-yellow-800";
-    default: return "bg-gray-100 text-gray-800";
+    case "delivered": return "bg-green-900/30 text-green-400";
+    case "delayed_at_factory": return "bg-red-900/30 text-red-400";
+    case "in_transit": return "bg-blue-900/30 text-blue-400";
+    case "ordered": return "bg-yellow-900/30 text-yellow-400";
+    default: return "bg-zinc-800 text-zinc-400";
   }
 };
 
 const uploadColor = (v: string) => {
   switch (v) {
-    case "uploaded": return "bg-green-100 text-green-800";
-    case "ready_for_upload": return "bg-yellow-100 text-yellow-800";
-    case "post_production_done": return "bg-purple-100 text-purple-800";
-    case "in_post_production": return "bg-blue-100 text-blue-800";
-    case "ready_for_retouch": return "bg-orange-100 text-orange-800";
-    case "ready_for_selection": return "bg-pink-100 text-pink-800";
-    case "in_the_studio": return "bg-cyan-100 text-cyan-800";
-    default: return "bg-gray-100 text-gray-800";
+    case "uploaded": return "bg-green-900/30 text-green-400";
+    case "ready_for_upload": return "bg-yellow-900/30 text-yellow-400";
+    case "post_production_done": return "bg-purple-900/30 text-purple-400";
+    case "in_post_production": return "bg-blue-900/30 text-blue-400";
+    case "ready_for_retouch": return "bg-orange-900/30 text-orange-400";
+    case "ready_for_selection": return "bg-pink-900/30 text-pink-400";
+    case "in_the_studio": return "bg-cyan-900/30 text-cyan-400";
+    default: return "bg-zinc-800 text-zinc-400";
   }
 };
 
@@ -666,10 +666,10 @@ function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect 
               <span className="text-xs text-muted-foreground">{product.productType}</span>
               {product.colour && <span className="text-xs text-muted-foreground">&middot; {product.colour}</span>}
               {product.isReshoot && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800">Reshoot</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-900/30 text-orange-400">Reshoot</span>
               )}
               {product.isCarryOver && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">Carry Over</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-900/30 text-blue-400">Carry Over</span>
               )}
               {product.factoryDelayed && (
                 <span className="flex items-center gap-1 text-xs text-destructive">
@@ -677,21 +677,21 @@ function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect 
                 </span>
               )}
               {getMissingShots(product) && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">{getMissingShots(product)}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-900/30 text-amber-400">{getMissingShots(product)}</span>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <div className="flex items-center gap-1.5 mr-1" title={`Gallery: ${product.galleryShots || "–"} | Details: ${product.detailsShots || "–"} | Misc: ${product.miscShots || "–"}`}>
                 <span className="flex items-center gap-0.5">
-                  <span className={cn("w-2 h-2 rounded-full", product.galleryShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
+                  <span className={cn("w-2 h-2 rounded-full", product.galleryShots?.trim() ? "bg-green-500" : "bg-zinc-600")} />
                   <span className="text-[10px] text-muted-foreground">G</span>
                 </span>
                 <span className="flex items-center gap-0.5">
-                  <span className={cn("w-2 h-2 rounded-full", product.detailsShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
+                  <span className={cn("w-2 h-2 rounded-full", product.detailsShots?.trim() ? "bg-green-500" : "bg-zinc-600")} />
                   <span className="text-[10px] text-muted-foreground">D</span>
                 </span>
                 <span className="flex items-center gap-0.5">
-                  <span className={cn("w-2 h-2 rounded-full", product.miscShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
+                  <span className={cn("w-2 h-2 rounded-full", product.miscShots?.trim() ? "bg-green-500" : "bg-zinc-600")} />
                   <span className="text-[10px] text-muted-foreground">M</span>
                 </span>
               </div>
@@ -811,7 +811,7 @@ function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect 
               {product.isReshoot && (
                 <button
                   onClick={() => updateMut.mutate({ isReshoot: false })}
-                  className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 hover:bg-orange-200 transition-colors"
+                  className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-orange-900/30 text-orange-400 hover:bg-orange-900/50 transition-colors"
                   title="Remove reshoot tag"
                 >
                   <RotateCcw className="w-3 h-3" />

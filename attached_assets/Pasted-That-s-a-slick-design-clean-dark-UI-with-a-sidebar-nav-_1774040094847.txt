@@ -1,0 +1,50 @@
+That's a slick design — clean dark UI with a sidebar nav, card-based layout, and good use of spacing. Here's a prompt to restyle your app to match this aesthetic:
+
+---
+
+**Design overhaul: Dark mode UI inspired by modern dashboard design**
+
+Completely restyle the app to a dark mode design with the following specifications:
+
+**Color scheme:**
+- **Background:** Dark grey (NOT pure black) — similar to Claude's dark mode, around `#1a1a2e` or `#1e1e2e` or `#212121`. A warm/neutral dark grey, not cold black.
+- **Cards/panels:** Slightly lighter dark grey, around `#2a2a3a` or `#2d2d2d` with subtle borders or `#333` borders
+- **Primary text:** White or near-white `#f0f0f0`
+- **Secondary text:** Muted grey `#888` or `#999`
+- **Accent/highlight color:** Keep the existing green for active states and the Shoot button, but make badges and buttons feel more refined
+- **Hover states:** Slightly lighter background on cards/rows
+
+**Layout changes:**
+- **Sidebar navigation** instead of top navigation bar. Left sidebar with:
+  - App name "Ridestore Studio" at the top with a small logo/icon
+  - Nav items stacked vertically with icons: Dashboard, Projects, Capture Sessions, Photo Shoots
+  - A divider line
+  - Role-specific items below: Shoot, Selection, Retouch, Naming, Upload (still respecting user visibility rules)
+  - Logged-in user name + logout at the bottom of the sidebar
+- **Active nav item** highlighted with a subtle background color (like the "Brand Knowledge" and "Emails" items in the reference screenshot)
+- Sidebar should be a fixed width (~220-250px), content area takes the rest
+
+**Typography:**
+- Clean sans-serif font (Inter, system-ui, or similar)
+- Larger, bolder page titles
+- Good hierarchy between headers, subheaders, and body text
+
+**Cards and components:**
+- Product cards with subtle rounded corners and dark backgrounds
+- Badges (Reshoot, Carry Over, Missing, status badges) should look polished — rounded, with muted background colors that work in dark mode
+- Buttons: Primary buttons with solid fills, secondary buttons with borders/outlines
+- Progress bars with rounded edges
+- Filter dropdowns and inputs styled for dark mode (dark backgrounds, light text, subtle borders)
+- Checkboxes and toggles styled to match the dark theme
+
+**General:**
+- Smooth, consistent spacing throughout
+- No harsh white elements — everything should feel cohesive in the dark theme
+- Subtle hover/transition effects for interactivity
+- The overall feel should be clean, modern, and professional — like a proper SaaS tool
+
+**Important:** Don't change any functionality — this is purely a visual/CSS overhaul. All features, filters, trackers, tick-off systems, and role-based visibility should work exactly as before.
+
+---
+
+Paste that in and it should transform the whole look. This will be a big visual upgrade — let me know how the first pass turns out and we can fine-tune from there.

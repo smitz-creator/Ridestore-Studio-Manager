@@ -583,13 +583,13 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
       </div>
 
       {state.continueMode && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+        <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-3 text-sm text-blue-300">
           All product types for {state.brand?.label} are now available.
         </div>
       )}
 
       {state.productType?.grouped && !state.continueMode && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+        <div className="bg-amber-900/20 border border-amber-800 rounded-lg p-3 text-sm text-amber-300">
           This includes both {state.productType.types.join(" and ")}.
         </div>
       )}
@@ -649,7 +649,7 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
                             onClick={() => !alreadyInSession && onToggle(p.id)}
                             className={cn(
                               "flex items-center gap-3 px-3 py-2 pl-12 border-t transition-colors text-sm",
-                              alreadyInSession ? "cursor-default bg-cyan-50/50" : isSelected ? "bg-primary/5 cursor-pointer" : "hover:bg-secondary/50 cursor-pointer"
+                              alreadyInSession ? "cursor-default bg-cyan-900/20" : isSelected ? "bg-primary/5 cursor-pointer" : "hover:bg-secondary/50 cursor-pointer"
                             )}
                           >
                             {alreadyInSession ? (
@@ -721,7 +721,7 @@ function StepConfirm({ state, allProducts, selected, available, onToggle, onConf
         <Badge variant="outline">{available.size}/{selected.size} available</Badge>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 flex items-start gap-2">
+      <div className="bg-amber-900/20 border border-amber-800 rounded-lg p-3 text-sm text-amber-300 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
         <span>Uncheck any products that are not available. They will be marked as "Delayed at Factory" and removed from the session.</span>
       </div>
@@ -736,7 +736,7 @@ function StepConfirm({ state, allProducts, selected, available, onToggle, onConf
                 onClick={() => onToggle(p.id)}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors",
-                  !isAvailable ? "bg-red-50/50" : "hover:bg-secondary/50"
+                  !isAvailable ? "bg-red-900/20" : "hover:bg-secondary/50"
                 )}
               >
                 <Checkbox
@@ -878,7 +878,7 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
           <span className="font-medium">{completeCount}/{total} complete</span>
           <span className="text-muted-foreground">{Math.round(progress)}%</span>
         </div>
-        <div className="w-full h-3 rounded-full overflow-hidden bg-gray-100">
+        <div className="w-full h-3 rounded-full overflow-hidden bg-zinc-800">
           <div
             className="h-full rounded-full transition-all duration-300"
             style={{ width: `${progress}%`, backgroundColor: "#22c55e" }}
@@ -898,7 +898,7 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
       </div>
 
       {allComplete && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center text-green-800 space-y-3">
+        <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 text-center text-green-300 space-y-3">
           <CheckCircle2 className="w-8 h-8 mx-auto" />
           <p className="font-medium">All products complete!</p>
           <div className="flex items-center justify-center gap-2">
@@ -927,7 +927,7 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
               className={cn(
                 "w-full flex items-center gap-2 p-3 rounded-lg border transition-all select-none",
                 anyActive
-                  ? "bg-green-50/50 border-green-200"
+                  ? "bg-green-900/20 border-green-800/50"
                   : "bg-card border-border"
               )}
             >
@@ -958,7 +958,7 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
                     <span className="text-sm text-foreground">· {p.colour}</span>
                   )}
                   {p.isReshoot && (
-                    <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-800 hover:bg-orange-100 shrink-0">Reshoot</Badge>
+                    <Badge className="text-[10px] px-1.5 py-0 bg-orange-900/30 text-orange-400 hover:bg-orange-900/30 shrink-0">Reshoot</Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -973,7 +973,7 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
                     "w-8 h-7 rounded text-xs font-bold transition-all",
                     gActive
                       ? "bg-green-600 text-white shadow-sm"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
                   )}
                   title={gActive ? "Gallery ✓ — click to remove" : "Mark Gallery shot"}
                 >
@@ -985,7 +985,7 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
                     "w-8 h-7 rounded text-xs font-bold transition-all",
                     dActive
                       ? "bg-green-600 text-white shadow-sm"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
                   )}
                   title={dActive ? "Details ✓ — click to remove" : "Mark Details shot"}
                 >
@@ -997,7 +997,7 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
                     "w-8 h-7 rounded text-xs font-bold transition-all",
                     mActive
                       ? "bg-green-600 text-white shadow-sm"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
                   )}
                   title={mActive ? "Misc ✓ — click to remove" : "Mark Misc shot"}
                 >
@@ -1009,7 +1009,7 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
                     "w-8 h-7 rounded text-[10px] font-bold transition-all",
                     coActive
                       ? "bg-blue-600 text-white shadow-sm"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
                   )}
                   title={coActive ? "Carry Over ✓ — click to remove" : "Mark as Carry Over"}
                 >

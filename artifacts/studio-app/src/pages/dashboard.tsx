@@ -58,7 +58,7 @@ export default function Dashboard() {
                       <span className="text-xs text-muted-foreground">{uploaded}/{total} uploaded</span>
                     </div>
                     {total > 0 && (
-                      <div className="flex w-full h-2.5 rounded-full overflow-hidden bg-gray-100">
+                      <div className="flex w-full h-2.5 rounded-full overflow-hidden bg-zinc-800">
                         {uploaded > 0 && <div style={{ width: `${(uploaded / total) * 100}%`, backgroundColor: "#22c55e" }} title={`Uploaded: ${uploaded}`} />}
                         {readyForUpload > 0 && <div style={{ width: `${(readyForUpload / total) * 100}%`, backgroundColor: "#eab308" }} title={`Ready for Upload: ${readyForUpload}`} />}
                         {postProductionDone > 0 && <div style={{ width: `${(postProductionDone / total) * 100}%`, backgroundColor: "#8b5cf6" }} title={`Post Production - Done: ${postProductionDone}`} />}
@@ -83,15 +83,15 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3 mt-2 pt-2 border-t">
                         <span className="text-[10px] text-muted-foreground font-medium">Shots:</span>
                         <span className="flex items-center gap-1 text-[10px]">
-                          <span className={`w-2 h-2 rounded-full ${hasGallery === total ? "bg-green-500" : hasGallery > 0 ? "bg-yellow-400" : "bg-gray-300"}`} />
+                          <span className={`w-2 h-2 rounded-full ${hasGallery === total ? "bg-green-500" : hasGallery > 0 ? "bg-yellow-400" : "bg-zinc-600"}`} />
                           <span className="text-muted-foreground">G {hasGallery}/{total}</span>
                         </span>
                         <span className="flex items-center gap-1 text-[10px]">
-                          <span className={`w-2 h-2 rounded-full ${hasDetails === total ? "bg-green-500" : hasDetails > 0 ? "bg-yellow-400" : "bg-gray-300"}`} />
+                          <span className={`w-2 h-2 rounded-full ${hasDetails === total ? "bg-green-500" : hasDetails > 0 ? "bg-yellow-400" : "bg-zinc-600"}`} />
                           <span className="text-muted-foreground">D {hasDetails}/{total}</span>
                         </span>
                         <span className="flex items-center gap-1 text-[10px]">
-                          <span className={`w-2 h-2 rounded-full ${hasMisc === total ? "bg-green-500" : hasMisc > 0 ? "bg-yellow-400" : "bg-gray-300"}`} />
+                          <span className={`w-2 h-2 rounded-full ${hasMisc === total ? "bg-green-500" : hasMisc > 0 ? "bg-yellow-400" : "bg-zinc-600"}`} />
                           <span className="text-muted-foreground">M {hasMisc}/{total}</span>
                         </span>
                       </div>

@@ -256,7 +256,7 @@ export default function Projects() {
                     <span className="text-sm text-muted-foreground">{total} products</span>
                   </div>
                   {total > 0 && (
-                    <div className="flex w-full h-2 rounded-full overflow-hidden bg-gray-100 mt-2">
+                    <div className="flex w-full h-2 rounded-full overflow-hidden bg-zinc-800 mt-2">
                       {uploaded > 0 && <div style={{ width: `${(uploaded / total) * 100}%`, backgroundColor: "#22c55e" }} />}
                       {readyForUpload > 0 && <div style={{ width: `${(readyForUpload / total) * 100}%`, backgroundColor: "#eab308" }} />}
                       {postProductionDone > 0 && <div style={{ width: `${(postProductionDone / total) * 100}%`, backgroundColor: "#8b5cf6" }} />}
