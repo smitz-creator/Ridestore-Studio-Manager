@@ -102,6 +102,10 @@ export default function ShootingMode() {
     const brandProjects = projects?.filter((p: any) => p.brand === state.brand!.brand) || [];
     const projectIds = new Set(brandProjects.map((p: any) => p.id));
 
+    if (state.continueMode) {
+      return allProducts.filter((p: any) => projectIds.has(p.projectId));
+    }
+
     let products = allProducts.filter((p: any) =>
       projectIds.has(p.projectId) && !p.factoryDelayed
     );
@@ -110,10 +114,6 @@ export default function ShootingMode() {
       products = products.filter((p: any) =>
         p.gender?.toLowerCase() === state.gender!.id.toLowerCase()
       );
-    }
-
-    if (state.continueMode) {
-      return products;
     }
 
     if (state.productType) {
@@ -593,15 +593,16 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
 
       <div className="border rounded-lg overflow-hidden max-h-[55vh] overflow-y-auto">
         {models.length === 0 ? (
-          <p className="p-6 text-center text-muted-foreground text-sm">No matching products found (factory delayed products excluded)</p>
+          <p className="p-6 text-center text-muted-foreground text-sm">No matching products found</p>
         ) : (
           <div className="divide-y">
-            {models.map(([modelName, count]) => {
+            {models.map(([modelName]) => {
               const modelProducts = productsByModel.get(modelName) || [];
-              const availableProducts = modelProducts.filter(p => !state.selectedProductIds.includes(p.id));
-              const selectedInModel = availableProducts.filter(p => selected.has(p.id)).length;
+              const selectableProducts = modelProducts.filter(p => !state.selectedProductIds.includes(p.id));
+              const selectedInModel = selectableProducts.filter(p => selected.has(p.id)).length;
               const isExpanded = expandedModels.has(modelName);
-              const allModelSelected = availableProducts.length > 0 && selectedInModel === availableProducts.length;
+              const allModelSelected = selectableProducts.length > 0 && selectedInModel === selectableProducts.length;
+              const inSessionCount = modelProducts.filter(p => state.selectedProductIds.includes(p.id)).length;
 
               return (
                 <div key={modelName}>
@@ -609,7 +610,7 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
                     <Checkbox
                       checked={allModelSelected}
                       onCheckedChange={() => onToggleModel(modelName)}
-                      disabled={availableProducts.length === 0}
+                      disabled={selectableProducts.length === 0}
                     />
                     <button
                       onClick={() => toggleExpand(modelName)}
@@ -617,9 +618,12 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
                     >
                       {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                       <span className="font-medium text-sm">{modelName}</span>
-                      <span className="text-xs text-muted-foreground">({availableProducts.length} items)</span>
+                      <span className="text-xs text-muted-foreground">({modelProducts.length} items)</span>
                       {selectedInModel > 0 && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{selectedInModel} selected</Badge>
+                      )}
+                      {inSessionCount > 0 && (
+                        <Badge className="text-[10px] px-1.5 py-0 bg-cyan-100 text-cyan-800 hover:bg-cyan-100">{inSessionCount} in session</Badge>
                       )}
                     </button>
                   </div>
@@ -628,24 +632,32 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
                       {modelProducts.map(p => {
                         const isSelected = selected.has(p.id);
                         const alreadyInSession = state.selectedProductIds.includes(p.id);
+                        const statusLabel = p.uploadStatus?.replace(/_/g, " ");
                         return (
                           <div
                             key={p.id}
                             onClick={() => !alreadyInSession && onToggle(p.id)}
                             className={cn(
-                              "flex items-center gap-3 px-3 py-2 pl-12 border-t cursor-pointer transition-colors text-sm",
-                              alreadyInSession ? "opacity-40 cursor-default" : isSelected ? "bg-primary/5" : "hover:bg-secondary/50"
+                              "flex items-center gap-3 px-3 py-2 pl-12 border-t transition-colors text-sm",
+                              alreadyInSession ? "cursor-default bg-cyan-50/50" : isSelected ? "bg-primary/5 cursor-pointer" : "hover:bg-secondary/50 cursor-pointer"
                             )}
                           >
-                            <Checkbox
-                              checked={isSelected}
-                              disabled={alreadyInSession}
-                              onCheckedChange={() => !alreadyInSession && onToggle(p.id)}
-                            />
-                            <span className="text-muted-foreground flex-1">{p.productType}</span>
+                            {alreadyInSession ? (
+                              <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0" />
+                            ) : (
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => onToggle(p.id)}
+                              />
+                            )}
+                            <span className="flex-1">{p.productType}</span>
                             <span className="text-muted-foreground">{p.colour || "–"}</span>
                             <span className="text-xs text-muted-foreground font-mono">{p.keyCode || ""}</span>
-                            {alreadyInSession && <Badge variant="outline" className="text-[10px]">In session</Badge>}
+                            {alreadyInSession ? (
+                              <Badge className="text-[10px] bg-cyan-100 text-cyan-800 hover:bg-cyan-100 shrink-0">In session</Badge>
+                            ) : statusLabel && statusLabel !== "not started" ? (
+                              <Badge variant="outline" className="text-[10px] shrink-0">{statusLabel}</Badge>
+                            ) : null}
                           </div>
                         );
                       })}
