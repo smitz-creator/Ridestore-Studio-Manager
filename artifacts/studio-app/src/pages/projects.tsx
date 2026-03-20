@@ -244,7 +244,7 @@ export default function Projects() {
         ) : (
           <div className="grid gap-3">
             {projects.map((p: any) => {
-              const { total, uploaded, delayed, notStarted, readyForRetouch, inPostProduction, postProductionDone, readyForUpload } = p.stats;
+              const { total, uploaded, delayed, notStarted, inTheStudio, readyForSelection, readyForRetouch, inPostProduction, postProductionDone, readyForUpload } = p.stats;
               return (
                 <Link key={p.id} href={`/projects/${p.id}`} className="bg-card border rounded-lg p-4 hover:shadow-sm transition-shadow block">
                   <div className="flex items-center justify-between mb-1">
@@ -262,11 +262,15 @@ export default function Projects() {
                       {postProductionDone > 0 && <div style={{ width: `${(postProductionDone / total) * 100}%`, backgroundColor: "#8b5cf6" }} />}
                       {inPostProduction > 0 && <div style={{ width: `${(inPostProduction / total) * 100}%`, backgroundColor: "#3b82f6" }} />}
                       {readyForRetouch > 0 && <div style={{ width: `${(readyForRetouch / total) * 100}%`, backgroundColor: "#f97316" }} />}
+                      {readyForSelection > 0 && <div style={{ width: `${(readyForSelection / total) * 100}%`, backgroundColor: "#ec4899" }} />}
+                      {inTheStudio > 0 && <div style={{ width: `${(inTheStudio / total) * 100}%`, backgroundColor: "#06b6d4" }} />}
                       {notStarted > 0 && <div style={{ width: `${(notStarted / total) * 100}%`, backgroundColor: "#9ca3af" }} />}
                     </div>
                   )}
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-2 gap-y-1 mt-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-x-2 gap-y-1 mt-2">
                     <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#9ca3af" }} />{notStarted} Not Started</span>
+                    <span className="flex items-center gap-1 text-[10px]" style={{ color: "#0891b2" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#06b6d4" }} />{inTheStudio} Studio</span>
+                    <span className="flex items-center gap-1 text-[10px]" style={{ color: "#db2777" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#ec4899" }} />{readyForSelection} Selection</span>
                     <span className="flex items-center gap-1 text-[10px]" style={{ color: "#ea580c" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#f97316" }} />{readyForRetouch} Retouch</span>
                     <span className="flex items-center gap-1 text-[10px]" style={{ color: "#2563eb" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#3b82f6" }} />{inPostProduction} Post Prod</span>
                     <span className="flex items-center gap-1 text-[10px]" style={{ color: "#7c3aed" }}><span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#8b5cf6" }} />{postProductionDone} PP Done</span>

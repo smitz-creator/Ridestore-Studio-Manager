@@ -12,7 +12,9 @@ router.get("/projects", async (_req, res): Promise<void> => {
       total: sql<number>`count(*)::int`,
       uploaded: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'uploaded')::int`,
       delayed: sql<number>`count(*) filter (where ${productsTable.factoryDelayed} = true)::int`,
-      notStarted: sql<number>`count(*) filter (where ${productsTable.uploadStatus} not in ('uploaded', 'ready_for_retouch', 'in_post_production', 'post_production_done', 'ready_for_upload'))::int`,
+      notStarted: sql<number>`count(*) filter (where ${productsTable.uploadStatus} not in ('uploaded', 'ready_for_retouch', 'in_post_production', 'post_production_done', 'ready_for_upload', 'in_the_studio', 'ready_for_selection'))::int`,
+      inTheStudio: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'in_the_studio')::int`,
+      readyForSelection: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'ready_for_selection')::int`,
       readyForRetouch: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'ready_for_retouch')::int`,
       inPostProduction: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'in_post_production')::int`,
       postProductionDone: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'post_production_done')::int`,
@@ -23,10 +25,10 @@ router.get("/projects", async (_req, res): Promise<void> => {
     })
     .from(productsTable)
     .groupBy(productsTable.projectId);
-  const defaultStats = { total: 0, uploaded: 0, delayed: 0, notStarted: 0, readyForRetouch: 0, inPostProduction: 0, postProductionDone: 0, readyForUpload: 0, hasGallery: 0, hasDetails: 0, hasMisc: 0 };
+  const defaultStats = { total: 0, uploaded: 0, delayed: 0, notStarted: 0, inTheStudio: 0, readyForSelection: 0, readyForRetouch: 0, inPostProduction: 0, postProductionDone: 0, readyForUpload: 0, hasGallery: 0, hasDetails: 0, hasMisc: 0 };
   const stats: Record<number, typeof defaultStats> = {};
   for (const r of rows) {
-    stats[r.projectId] = { total: r.total, uploaded: r.uploaded, delayed: r.delayed, notStarted: r.notStarted, readyForRetouch: r.readyForRetouch, inPostProduction: r.inPostProduction, postProductionDone: r.postProductionDone, readyForUpload: r.readyForUpload, hasGallery: r.hasGallery, hasDetails: r.hasDetails, hasMisc: r.hasMisc };
+    stats[r.projectId] = { total: r.total, uploaded: r.uploaded, delayed: r.delayed, notStarted: r.notStarted, inTheStudio: r.inTheStudio, readyForSelection: r.readyForSelection, readyForRetouch: r.readyForRetouch, inPostProduction: r.inPostProduction, postProductionDone: r.postProductionDone, readyForUpload: r.readyForUpload, hasGallery: r.hasGallery, hasDetails: r.hasDetails, hasMisc: r.hasMisc };
   }
   const result = projects.map(p => ({
     ...p,

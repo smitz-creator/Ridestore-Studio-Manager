@@ -10,6 +10,8 @@ import { ChevronDown, ChevronUp, Camera, Calendar as CalendarIcon, Layers } from
 
 const UPLOAD_STATUSES = [
   { value: "not_started", label: "Not Started" },
+  { value: "in_the_studio", label: "In the Studio" },
+  { value: "ready_for_selection", label: "Ready for Selection" },
   { value: "ready_for_retouch", label: "Ready for Retouch" },
   { value: "in_post_production", label: "In Post Production" },
   { value: "post_production_done", label: "Post Production - Done" },
@@ -26,6 +28,8 @@ const statusColor = (v: string) => {
     case "post_production_done": return "bg-purple-100 text-purple-800";
     case "in_post_production": return "bg-blue-100 text-blue-800";
     case "ready_for_retouch": return "bg-orange-100 text-orange-800";
+    case "ready_for_selection": return "bg-pink-100 text-pink-800";
+    case "in_the_studio": return "bg-cyan-100 text-cyan-800";
     default: return "bg-gray-100 text-gray-800";
   }
 };
@@ -165,7 +169,7 @@ function CaptureSessionCard({ session, isExpanded, onToggle }: {
 
   const statusSummary = Object.entries(session.statusBreakdown as Record<string, number>)
     .sort((a, b) => {
-      const order = ["not_started", "ready_for_retouch", "in_post_production", "post_production_done", "ready_for_upload", "uploaded"];
+      const order = ["not_started", "in_the_studio", "ready_for_selection", "ready_for_retouch", "in_post_production", "post_production_done", "ready_for_upload", "uploaded"];
       return order.indexOf(a[0]) - order.indexOf(b[0]);
     });
 

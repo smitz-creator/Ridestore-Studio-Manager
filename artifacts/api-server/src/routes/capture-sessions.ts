@@ -81,7 +81,7 @@ router.get("/capture-sessions", async (_req, res): Promise<void> => {
 
 router.patch("/capture-sessions/bulk-status", async (req, res): Promise<void> => {
   const { productIds, uploadStatus } = req.body;
-  const validStatuses = ["not_started", "ready_for_retouch", "in_post_production", "post_production_done", "ready_for_upload", "uploaded"];
+  const validStatuses = ["not_started", "in_the_studio", "ready_for_selection", "ready_for_retouch", "in_post_production", "post_production_done", "ready_for_upload", "uploaded"];
   if (!Array.isArray(productIds) || !productIds.length || !validStatuses.includes(uploadStatus)) {
     res.status(400).json({ error: "productIds (array) and valid uploadStatus required" });
     return;

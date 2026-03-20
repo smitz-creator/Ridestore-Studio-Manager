@@ -10,6 +10,7 @@ import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
 import Sessions from "@/pages/sessions";
 import CaptureSessions from "@/pages/capture-sessions";
+import ShootingMode from "@/pages/shooting-mode";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +34,7 @@ function AppRoutes() {
       <Route path="/projects" component={Projects} />
       <Route path="/projects/:id" component={ProjectDetail} />
       <Route path="/capture-sessions" component={CaptureSessions} />
+      <Route path="/shooting-mode" component={ShootingMode} />
       <Route path="/sessions" component={Sessions} />
       <Route component={NotFound} />
     </Switch>

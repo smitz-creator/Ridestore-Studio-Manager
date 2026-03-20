@@ -7,6 +7,7 @@ import {
   FolderKanban,
   Calendar,
   Camera,
+  Aperture,
   Menu,
   X,
   LogOut,
@@ -67,6 +68,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/shooting-mode"
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              location === "/shooting-mode"
+                ? "bg-primary text-primary-foreground"
+                : "bg-cyan-100 text-cyan-800 hover:bg-cyan-200"
+            )}
+          >
+            <Aperture className="w-4 h-4" />
+            <span className="hidden sm:inline">Shoot</span>
+          </Link>
           <span className="text-sm font-medium">{user?.name}</span>
           <button
             onClick={logout}

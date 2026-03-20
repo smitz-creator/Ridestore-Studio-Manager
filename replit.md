@@ -24,14 +24,15 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 
 ### Features
 - **Login**: Pick your name from a list, stored in localStorage
-- **Dashboard**: Project progress bars, factory-delayed warnings, upcoming/past studio sessions
-- **Projects**: Each has a name, brand (Dope Snow/Montec), and season (e.g. FW25). Shows product count and upload progress
-- **Products** (within a project): Each tracks Gender, Product Type, Shortname (model name), Style, Design, Key Code, Colour. Shot types: Gallery Shots, Details Shots, Misc Shots (text fields). Delivery Status (Not Ordered, Ordered, In Transit, Delayed at Factory, Delivered/In GBG). Factory Delayed flag. Upload Status is a 6-stage pipeline: Not Started (grey), Ready for Retouch (orange), In Post Production (blue), Post Production - Done (purple), Ready for Upload (yellow), Uploaded (green). Expandable rows with inline editing.
+- **Dashboard**: Project progress bars (8-stage pipeline), shot coverage stats, factory-delayed warnings, upcoming/past studio sessions
+- **Projects**: Each has a name, brand (Dope Snow/Montec), and season (e.g. FW25). Shows product count and upload progress with 8-stage segmented bar
+- **Products** (within a project): Each tracks Gender, Product Type, Shortname (model name), Style, Design, Key Code, Colour. Shot types: Gallery Shots, Details Shots, Misc Shots (text fields). Delivery Status (Not Ordered, Ordered, In Transit, Delayed at Factory, Delivered/In GBG). Factory Delayed flag. Upload Status is an 8-stage pipeline: Not Started (grey #9ca3af) → In the Studio (cyan #06b6d4) → Ready for Selection (pink #ec4899) → Ready for Retouch (orange #f97316) → In Post Production (blue #3b82f6) → Post Production - Done (purple #8b5cf6) → Ready for Upload (yellow #eab308) → Uploaded (green #22c55e). Expandable rows with inline editing.
 - **Filtering**: Gender, product type, model name, delivery status, upload status, shot missing (gallery/details/misc), delayed only, text search
 - **Comments**: Any user can comment on a product, showing who and when
-- **Capture Sessions**: Auto-collected from Gallery/Details/Misc shot fields across all products. Groups products by session name and shot type. Shows parsed dates from session names (e.g. 27.01 → Jan 27). Expandable to show product table. "Change status for all" bulk updates all products in a session at once.
-- **Excel Import**: Upload .xlsx files to bulk-import products. Reads sheets "DOPE" (Dope Snow) and "MONTEC" (Montec). Maps columns: Gender, PRODUCT TYPE, SHORTNAME, STYLE, DESIGN, KEY→key_code, COLOUR, GALLERY SHOT, DETAILS SHOT, INSIDE PICS TAKEN→misc_shots, DELIVERY STATUS, UPLOADED, REMARKS. Auto-maps delivery/upload statuses.
-- **Studio Sessions**: Book sessions with date, model name, brand, shot type, notes. Shows upcoming and past sessions.
+- **Capture Sessions**: Auto-collected from Gallery/Details/Misc shot fields across all products. Groups products by session name and shot type. Shows parsed dates from session names. Expandable to show product table. "Change status for all" bulk updates.
+- **Excel Import**: Upload .xlsx files to bulk-import products. Multi-sheet support: previews all sheets, lets user pick which to import, auto-detects season from filename. Creates one project per selected sheet. Sheet names map to brands: DOPE→Dope Snow, MONTEC→Montec. Also supports per-project import.
+- **Studio Sessions ("Photo Shoots")**: Book sessions with date, model name, brand, shot type, notes.
+- **Shooting Mode**: Multi-step guided workflow for live studio shoot days. Step 1: Pick Brand → Gender → Product Type with big tappable buttons, auto-generates session name (format: BRAND_GENDER_TYPE_FWyy_DD.MM). Step 2: Select products (filtered by brand/gender/type, excludes factory-delayed, model filter). Step 3: Live tracking with checkboxes — entering sets products to "In the Studio", ticking off sets to "Ready for Selection". Step 4: Session complete — continue with different products or close (reverts unchecked products to previous status).
 
 ### Database Tables
 - `users`: id, name, created_at
@@ -42,20 +43,24 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 
 ### API Endpoints (under /api)
 - `GET /users` — list all users
-- `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id` — project CRUD with product stats
+- `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id` — project CRUD with product stats (8 pipeline stages + shot coverage)
 - `GET/POST /products`, `GET/PATCH/DELETE /products/:id` — product CRUD with filtering
-- `POST /projects/:id/import` — Excel file upload, parses .xlsx and imports products
+- `POST /projects/:id/import` — Excel file upload into existing project
+- `POST /import/preview` — Preview all sheets in an Excel file
+- `POST /import/execute` — Import selected sheets, creating projects per sheet
 - `GET/POST /products/:productId/comments` — comments per product
 - `GET/POST /sessions`, `DELETE /sessions/:id` — studio session CRUD
 - `GET /capture-sessions` — auto-collected sessions from product shot fields with status breakdowns
-- `PATCH /capture-sessions/bulk-status` — bulk update upload status for multiple products
+- `PATCH /capture-sessions/bulk-status` — bulk update upload status for multiple products (supports all 8 statuses)
 - `GET /dashboard` — upcoming/past sessions for dashboard
 
 ### Frontend Pages
 - `/` — Login (if not authenticated) or Dashboard
-- `/projects` — Projects list
+- `/projects` — Projects list with Import Excel
 - `/projects/:id` — Project detail with products, filtering, comments
-- `/sessions` — Studio sessions management
+- `/shooting-mode` — Multi-step guided shooting workflow
+- `/capture-sessions` — Auto-grouped capture sessions
+- `/sessions` — Studio sessions management ("Photo Shoots")
 
 ## TypeScript & Composite Projects
 
@@ -69,7 +74,7 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 ### `artifacts/api-server` (`@workspace/api-server`)
 
 Express 5 API server. Routes in `src/routes/`. Uses `@workspace/db` for persistence.
-- Routes: users, projects, products, comments, sessions, health, dashboard
+- Routes: users, projects, products, comments, sessions, health, dashboard, import, capture-sessions
 
 ### `artifacts/studio-app` (`@workspace/studio-app`)
 
