@@ -20,7 +20,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 An e-commerce product photography tracking tool for Ridestore, managing products across brands (Dope Snow, Montec) and seasons.
 
 ### Visual Design
-Dark theme with fixed sidebar navigation. Background: deep navy (`hsl(240, 15%, 11%)`), cards: slightly lighter navy, sidebar: darkest navy with emerald accent. All status badges use translucent dark variants (e.g. `bg-green-900/30 text-green-400`). Fixed 240px sidebar on desktop with logo, general nav, role-specific nav (separated by divider), and user controls at bottom. Mobile uses collapsible slide-down menu.
+Dark theme with fixed sidebar navigation. Background: warm medium-dark grey (`#2e2e2e`), cards: slightly lighter (`#383838`), sidebar: darker grey (`#262626`) with emerald accent. All status badges use translucent dark variants (e.g. `bg-green-900/30 text-green-400`). Fixed 240px sidebar on desktop with logo, general nav, role-specific nav (separated by divider), and user controls at bottom. Mobile uses collapsible slide-down menu.
 
 ### Users
 Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén, Agnes
