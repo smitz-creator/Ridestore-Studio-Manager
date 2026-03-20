@@ -38,11 +38,17 @@ const PRODUCT_TYPES = [
 
 type ShootingStep = 1 | 2 | "confirm" | 3 | 4;
 
+const RESHOOT_STATUSES = new Set([
+  "ready_for_selection", "ready_for_retouch", "in_post_production",
+  "post_production_done", "ready_for_upload", "uploaded",
+]);
+
 type ShootingState = {
   step: ShootingStep;
   brand: typeof BRANDS[number] | null;
   gender: typeof GENDERS[number] | null;
   productType: typeof PRODUCT_TYPES[number] | null;
+  baseSessionName: string;
   sessionName: string;
   selectedProductIds: number[];
   checkedProductIds: Set<number>;
@@ -59,6 +65,7 @@ export default function ShootingMode() {
     brand: null,
     gender: null,
     productType: null,
+    baseSessionName: "",
     sessionName: "",
     selectedProductIds: [],
     checkedProductIds: new Set(),
@@ -138,6 +145,23 @@ export default function ShootingMode() {
   const [step2Selected, setStep2Selected] = React.useState<Set<number>>(new Set());
   const [confirmAvailable, setConfirmAvailable] = React.useState<Set<number>>(new Set());
 
+  const isReshoot = React.useMemo(() => {
+    if (!allProducts || step2Selected.size === 0) return false;
+    return [...step2Selected].some(id => {
+      const p = allProducts.find((prod: any) => prod.id === id);
+      return p && RESHOOT_STATUSES.has(p.uploadStatus);
+    });
+  }, [allProducts, step2Selected]);
+
+  React.useEffect(() => {
+    if (!state.baseSessionName) return;
+    const suffix = isReshoot ? "_RESHOOT" : "";
+    const newName = state.baseSessionName + suffix;
+    if (newName !== state.sessionName) {
+      setState(s => ({ ...s, sessionName: newName }));
+    }
+  }, [isReshoot, state.baseSessionName]);
+
   const handleSelectBrand = (brand: typeof BRANDS[number]) => {
     setState(s => ({ ...s, brand, gender: null, productType: null }));
   };
@@ -153,11 +177,12 @@ export default function ShootingMode() {
     const month = now.getMonth();
     const seasonPrefix = month >= 3 && month <= 8 ? "SS" : "FW";
     const yr = String(now.getFullYear()).slice(-2);
-    const name = `${state.brand!.id}_${state.gender!.id}_${pt.id}_${seasonPrefix}${yr}_${dd}.${mm}`;
+    const baseName = `${state.brand!.id}_${state.gender!.id}_${pt.id}_${seasonPrefix}${yr}_${dd}.${mm}`;
     setState(s => ({
       ...s,
       productType: pt,
-      sessionName: name,
+      baseSessionName: baseName,
+      sessionName: baseName,
       step: 2,
     }));
     setStep2Selected(new Set());
@@ -310,6 +335,7 @@ export default function ShootingMode() {
       brand: null,
       gender: null,
       productType: null,
+      baseSessionName: "",
       sessionName: "",
       selectedProductIds: [],
       checkedProductIds: new Set(),
@@ -329,6 +355,7 @@ export default function ShootingMode() {
       brand: null,
       gender: null,
       productType: null,
+      baseSessionName: "",
       sessionName: "",
       selectedProductIds: [],
       checkedProductIds: new Set(),
@@ -367,6 +394,7 @@ export default function ShootingMode() {
             products={filteredProducts}
             models={models}
             selected={step2Selected}
+            isReshoot={isReshoot}
             onToggle={handleStep2Toggle}
             onToggleModel={handleToggleModel}
             onSelectAll={handleSelectAll}
@@ -524,11 +552,12 @@ function Step1({ state, sessionName, onSelectBrand, onSelectGender, onSelectProd
   );
 }
 
-function Step2({ state, products, models, selected, onToggle, onToggleModel, onSelectAll, onNext, onBack, loading }: {
+function Step2({ state, products, models, selected, isReshoot, onToggle, onToggleModel, onSelectAll, onNext, onBack, loading }: {
   state: ShootingState;
   products: any[];
   models: [string, number][];
   selected: Set<number>;
+  isReshoot: boolean;
   onToggle: (id: number) => void;
   onToggleModel: (model: string) => void;
   onSelectAll: () => void;
@@ -581,6 +610,13 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
       {state.productType?.grouped && !state.continueMode && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
           This includes both {state.productType.types.join(" and ")}.
+        </div>
+      )}
+
+      {isReshoot && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-800 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>Reshoot session — some selected products have already been processed.</span>
         </div>
       )}
 
