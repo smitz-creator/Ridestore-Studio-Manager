@@ -76,6 +76,7 @@ export default function ProjectDetail() {
   const [filters, setFilters] = React.useState<Record<string, string>>({});
   const [searchText, setSearchText] = React.useState("");
   const [showFilters, setShowFilters] = React.useState(false);
+  const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
 
   const queryParams = React.useMemo(() => {
     const p: Record<string, string> = { projectId: String(id) };
@@ -102,6 +103,16 @@ export default function ProjectDetail() {
     enabled: !!id,
   });
 
+  React.useEffect(() => {
+    if (!products) return;
+    const visibleIds = new Set(products.map((p: any) => p.id));
+    setSelectedIds(prev => {
+      const next = new Set<number>();
+      prev.forEach(id => { if (visibleIds.has(id)) next.add(id); });
+      return next.size !== prev.size ? next : prev;
+    });
+  }, [products]);
+
   const productTypes = React.useMemo(() => {
     if (!allProducts.data) return [];
     return [...new Set(allProducts.data.map((p: any) => p.productType))].sort();
@@ -126,6 +137,18 @@ export default function ProjectDetail() {
       setAddOpen(false);
       setAddForm({ gender: "Men", productType: "", shortname: "", style: "", design: "", keyCode: "", colour: "" });
       toast({ title: "Product added" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const bulkMut = useMutation({
+    mutationFn: ({ productIds, updates }: { productIds: number[]; updates: Record<string, any> }) =>
+      api.bulkUpdateProducts(productIds, updates),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      const count = vars.productIds.length;
+      toast({ title: `Updated ${count} product${count !== 1 ? "s" : ""}` });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -163,13 +186,54 @@ export default function ProjectDetail() {
     setSearchText("");
   };
 
+  const handleToggleSelect = (productId: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+  };
+
+  const handleToggleAll = () => {
+    if (!products) return;
+    const visibleIds = products.map((p: any) => p.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id: number) => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(visibleIds));
+    }
+  };
+
+  const allVisibleSelected = products?.length > 0 && products.every((p: any) => selectedIds.has(p.id));
+
+  const handleBulkUploadStatus = (status: string) => {
+    const ids = [...selectedIds];
+    bulkMut.mutate({ productIds: ids, updates: { uploadStatus: status } });
+  };
+
+  const handleBulkDeliveryStatus = (status: string) => {
+    const ids = [...selectedIds];
+    const updates: Record<string, any> = { deliveryStatus: status };
+    if (status === "delayed_at_factory") updates.factoryDelayed = true;
+    bulkMut.mutate({ productIds: ids, updates });
+  };
+
+  const handleBulkToggleDelayed = () => {
+    const ids = [...selectedIds];
+    const selectedProducts = products?.filter((p: any) => selectedIds.has(p.id)) || [];
+    const anyNotDelayed = selectedProducts.some((p: any) => !p.factoryDelayed);
+    bulkMut.mutate({ productIds: ids, updates: { factoryDelayed: anyNotDelayed } });
+  };
+
   if (!project) {
     return <Layout><p className="text-muted-foreground">Loading...</p></Layout>;
   }
 
   return (
     <Layout>
-      <div className="space-y-4 max-w-6xl mx-auto">
+      <div className="space-y-4 max-w-6xl mx-auto pb-20">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Link href="/projects" className="hover:text-foreground flex items-center gap-1">
             <ArrowLeft className="w-3 h-3" /> Projects
@@ -374,7 +438,18 @@ export default function ProjectDetail() {
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">{products.length} product{products.length !== 1 ? "s" : ""}</p>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={allVisibleSelected}
+                  onCheckedChange={handleToggleAll}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+                </span>
+              </label>
+              <span className="text-xs text-muted-foreground">&middot; {products.length} product{products.length !== 1 ? "s" : ""}</span>
+            </div>
             {products.map((product: any) => (
               <ProductRow
                 key={product.id}
@@ -382,17 +457,65 @@ export default function ProjectDetail() {
                 expanded={expandedId === product.id}
                 onToggle={() => setExpandedId(expandedId === product.id ? null : product.id)}
                 userId={user?.id}
+                isSelected={selectedIds.has(product.id)}
+                onSelect={() => handleToggleSelect(product.id)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-lg">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-medium shrink-0">{selectedIds.size} selected</span>
+            <div className="flex items-center gap-2 flex-wrap flex-1">
+              <Select onValueChange={handleBulkUploadStatus} disabled={bulkMut.isPending}>
+                <SelectTrigger className="w-[200px] h-8 text-xs">
+                  <SelectValue placeholder="Change Upload Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UPLOAD_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select onValueChange={handleBulkDeliveryStatus} disabled={bulkMut.isPending}>
+                <SelectTrigger className="w-[200px] h-8 text-xs">
+                  <SelectValue placeholder="Change Delivery Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELIVERY_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkToggleDelayed}
+                disabled={bulkMut.isPending}
+                className="text-xs h-8"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+                Toggle Factory Delayed
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-xs h-8 shrink-0"
+            >
+              <X className="w-3.5 h-3.5 mr-1" />
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
 
-function ProductRow({ product, expanded, onToggle, userId }: {
+function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect }: {
   product: any; expanded: boolean; onToggle: () => void; userId?: number;
+  isSelected: boolean; onSelect: () => void;
 }) {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -431,52 +554,57 @@ function ProductRow({ product, expanded, onToggle, userId }: {
   });
 
   return (
-    <div className="bg-card border rounded-lg overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full text-left px-4 py-3 hover:bg-secondary/50 transition-colors"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <span className="font-medium text-sm">{product.shortname}</span>
-            {product.keyCode && <span className="text-xs text-muted-foreground font-mono">{product.keyCode}</span>}
-            <Badge variant="outline" className="text-xs">{product.gender}</Badge>
-            <span className="text-xs text-muted-foreground">{product.productType}</span>
-            {product.colour && <span className="text-xs text-muted-foreground">&middot; {product.colour}</span>}
-            {product.isReshoot && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800">Reshoot</span>
-            )}
-            {product.factoryDelayed && (
-              <span className="flex items-center gap-1 text-xs text-destructive">
-                <AlertTriangle className="w-3 h-3" /> Delayed
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5 mr-1" title={`Gallery: ${product.galleryShots || "–"} | Details: ${product.detailsShots || "–"} | Misc: ${product.miscShots || "–"}`}>
-              <span className="flex items-center gap-0.5">
-                <span className={cn("w-2 h-2 rounded-full", product.galleryShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
-                <span className="text-[10px] text-muted-foreground">G</span>
-              </span>
-              <span className="flex items-center gap-0.5">
-                <span className={cn("w-2 h-2 rounded-full", product.detailsShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
-                <span className="text-[10px] text-muted-foreground">D</span>
-              </span>
-              <span className="flex items-center gap-0.5">
-                <span className={cn("w-2 h-2 rounded-full", product.miscShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
-                <span className="text-[10px] text-muted-foreground">M</span>
-              </span>
-            </div>
-            <span className={cn("text-xs px-2 py-0.5 rounded-full", deliveryColor(product.deliveryStatus))}>
-              {deliveryLabel(product.deliveryStatus)}
-            </span>
-            <span className={cn("text-xs px-2 py-0.5 rounded-full", uploadColor(product.uploadStatus))}>
-              {uploadLabel(product.uploadStatus)}
-            </span>
-            {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-          </div>
+    <div className={cn("bg-card border rounded-lg overflow-hidden", isSelected && "ring-2 ring-primary/50")}>
+      <div className="flex items-center">
+        <div className="pl-3 py-3 flex items-center shrink-0">
+          <Checkbox checked={isSelected} onCheckedChange={onSelect} />
         </div>
-      </button>
+        <button
+          onClick={onToggle}
+          className="flex-1 text-left px-3 py-3 hover:bg-secondary/50 transition-colors min-w-0"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <span className="font-medium text-sm">{product.shortname}</span>
+              {product.keyCode && <span className="text-xs text-muted-foreground font-mono">{product.keyCode}</span>}
+              <Badge variant="outline" className="text-xs">{product.gender}</Badge>
+              <span className="text-xs text-muted-foreground">{product.productType}</span>
+              {product.colour && <span className="text-xs text-muted-foreground">&middot; {product.colour}</span>}
+              {product.isReshoot && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800">Reshoot</span>
+              )}
+              {product.factoryDelayed && (
+                <span className="flex items-center gap-1 text-xs text-destructive">
+                  <AlertTriangle className="w-3 h-3" /> Delayed
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 mr-1" title={`Gallery: ${product.galleryShots || "–"} | Details: ${product.detailsShots || "–"} | Misc: ${product.miscShots || "–"}`}>
+                <span className="flex items-center gap-0.5">
+                  <span className={cn("w-2 h-2 rounded-full", product.galleryShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
+                  <span className="text-[10px] text-muted-foreground">G</span>
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <span className={cn("w-2 h-2 rounded-full", product.detailsShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
+                  <span className="text-[10px] text-muted-foreground">D</span>
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <span className={cn("w-2 h-2 rounded-full", product.miscShots?.trim() ? "bg-green-500" : "bg-gray-300")} />
+                  <span className="text-[10px] text-muted-foreground">M</span>
+                </span>
+              </div>
+              <span className={cn("text-xs px-2 py-0.5 rounded-full", deliveryColor(product.deliveryStatus))}>
+                {deliveryLabel(product.deliveryStatus)}
+              </span>
+              <span className={cn("text-xs px-2 py-0.5 rounded-full", uploadColor(product.uploadStatus))}>
+                {uploadLabel(product.uploadStatus)}
+              </span>
+              {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+            </div>
+          </div>
+        </button>
+      </div>
 
       {expanded && (
         <div className="border-t px-4 py-4 space-y-4">

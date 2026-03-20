@@ -38,6 +38,8 @@ export const api = {
   getCaptureSessions: () => fetchJson("/capture-sessions"),
   bulkUpdateStatus: (productIds: number[], uploadStatus: string) =>
     fetchJson("/capture-sessions/bulk-status", { method: "PATCH", body: JSON.stringify({ productIds, uploadStatus }) }),
+  bulkUpdateProducts: (productIds: number[], updates: Record<string, any>) =>
+    fetchJson("/products/bulk-update", { method: "PATCH", body: JSON.stringify({ productIds, updates }) }),
   importExcel: async (projectId: number, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
