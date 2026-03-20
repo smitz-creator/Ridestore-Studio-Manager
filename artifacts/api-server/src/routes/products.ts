@@ -68,11 +68,12 @@ router.get("/products/:id", async (req, res): Promise<void> => {
 router.patch("/products/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const allowedFields = ["gender", "productType", "shortname", "style", "design", "keyCode", "colour", "galleryShots", "detailsShots", "miscShots", "deliveryStatus", "factoryDelayed", "uploadStatus"] as const;
+  const allowedFields = ["gender", "productType", "shortname", "style", "design", "keyCode", "colour", "galleryShots", "detailsShots", "miscShots", "deliveryStatus", "factoryDelayed", "isReshoot", "uploadStatus"] as const;
   const updates: Record<string, any> = {};
   for (const key of allowedFields) {
     if (key in req.body) updates[key] = req.body[key];
   }
+  if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No valid fields to update" }); return; }
   const [product] = await db.update(productsTable).set(updates).where(eq(productsTable.id, id)).returning();
   if (!product) { res.status(404).json({ error: "Not found" }); return; }
   res.json(product);

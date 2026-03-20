@@ -443,6 +443,9 @@ function ProductRow({ product, expanded, onToggle, userId }: {
             <Badge variant="outline" className="text-xs">{product.gender}</Badge>
             <span className="text-xs text-muted-foreground">{product.productType}</span>
             {product.colour && <span className="text-xs text-muted-foreground">&middot; {product.colour}</span>}
+            {product.isReshoot && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800">Reshoot</span>
+            )}
             {product.factoryDelayed && (
               <span className="flex items-center gap-1 text-xs text-destructive">
                 <AlertTriangle className="w-3 h-3" /> Delayed

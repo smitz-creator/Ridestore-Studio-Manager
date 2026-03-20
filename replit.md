@@ -37,7 +37,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 ### Database Tables
 - `users`: id, name, created_at
 - `projects`: id, name, brand, season, created_at, updated_at
-- `products`: id, project_id (FK), gender, product_type, shortname, style, design, key_code, colour, gallery_shots, details_shots, misc_shots, delivery_status, factory_delayed, upload_status, created_at, updated_at
+- `products`: id, project_id (FK), gender, product_type, shortname, style, design, key_code, colour, gallery_shots, details_shots, misc_shots, delivery_status, factory_delayed, is_reshoot, upload_status, created_at, updated_at
 - `comments`: id, product_id (FK), user_id (FK), text, created_at
 - `studio_sessions`: id, date, model_name, brand, shot_type, notes, created_by_id, created_at
 

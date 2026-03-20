@@ -247,7 +247,14 @@ function CaptureSessionCard({ session, isExpanded, onToggle }: {
                 <tbody>
                   {sessionProducts.map((p: any) => (
                     <tr key={p.id} className="border-t">
-                      <td className="px-3 py-1.5 font-medium">{p.shortname}</td>
+                      <td className="px-3 py-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">{p.shortname}</span>
+                          {p.isReshoot && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800">Reshoot</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-3 py-1.5 text-muted-foreground font-mono text-xs">{p.keyCode || "–"}</td>
                       <td className="px-3 py-1.5 text-muted-foreground">{p.colour || "–"}</td>
                       <td className="px-3 py-1.5">
