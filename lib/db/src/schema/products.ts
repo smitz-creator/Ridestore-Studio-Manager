@@ -17,6 +17,7 @@ export const productsTable = pgTable("products", {
   deliveryStatus: text("delivery_status").notNull().default("not_ordered"),
   factoryDelayed: boolean("factory_delayed").notNull().default(false),
   isReshoot: boolean("is_reshoot").notNull().default(false),
+  isCarryOver: boolean("is_carry_over").notNull().default(false),
   uploadStatus: text("upload_status").notNull().default("not_started"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

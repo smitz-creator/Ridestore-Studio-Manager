@@ -1,0 +1,24 @@
+Good idea — "Carry Over" is a much clearer label for products that were pushed through without all their shots because they're being reused from a previous season. Here's the prompt for Replit:
+
+---
+
+**Feature: Add "Carry Over" badge and filter**
+
+Some products intentionally skip Gallery and/or Details shots because they're carry-over products from a previous season. Add a "Carry Over" tag system:
+
+1. **Add a "Carry Over" badge** — similar to the Reshoot badge, but styled differently (e.g., blue or grey). It should appear on the product row next to other badges.
+
+2. **Add a way to tag products as Carry Over.** In the expanded product detail row, add a "Carry Over" toggle/button next to "Factory Delayed" (similar to how Reshoot works). When a product is marked as Carry Over:
+   - The "Carry Over" badge appears on the product row
+   - **The "Missing Gallery", "Missing Details", or "Missing Gallery & Details" badge should be removed** — because carry-over products are intentionally missing shots. They don't need to be caught by the auto-catch system.
+   - The product should **NOT be sent back to "Not Started"** when moved to "Ready for Upload" if it's tagged as Carry Over — it's allowed to skip required shots.
+
+3. **Add "Carry Over" to the "Shot Missing" filter dropdown** as a new option (alongside Any, Missing Required, Gallery, Details, Misc). When selected, filter to show only products tagged as Carry Over.
+
+4. **Add bulk "Toggle Carry Over" button** in the bottom action bar (alongside Toggle Factory Delayed and Remove Reshoot), so users can tag multiple products as carry-over at once.
+
+5. **Carry Over badge should be removable** — clicking X on the badge or using a bulk action should remove it. If the product is still missing required shots after removing Carry Over, the Missing shots badge should reappear.
+
+---
+
+This way carry-over products won't get flagged as missing shots, and you can easily filter to see all of them. Paste that in and let me know how it looks.

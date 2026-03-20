@@ -30,6 +30,7 @@ router.get("/products", async (req, res): Promise<void> => {
   if (uploadStatus) conditions.push(eq(productsTable.uploadStatus, uploadStatus as string));
   if (delayed === "true") conditions.push(eq(productsTable.factoryDelayed, true));
   if (reshoot === "true") conditions.push(eq(productsTable.isReshoot, true));
+  if (shotMissing === "carry_over") conditions.push(eq(productsTable.isCarryOver, true));
 
   if (shotMissing === "gallery") conditions.push(or(isNull(productsTable.galleryShots), eq(productsTable.galleryShots, "")));
   if (shotMissing === "details") conditions.push(or(isNull(productsTable.detailsShots), eq(productsTable.detailsShots, "")));
@@ -42,6 +43,7 @@ router.get("/products", async (req, res): Promise<void> => {
       ilike(productsTable.productType, "%pants%"),
       ilike(productsTable.productType, "%pant%"),
     );
+    conditions.push(eq(productsTable.isCarryOver, false));
     conditions.push(or(
       galleryEmpty!,
       and(isJacketPants!, detailsEmpty!),
@@ -117,6 +119,9 @@ router.patch("/products/bulk-update", async (req, res): Promise<void> => {
   if ("isReshoot" in updates) {
     setData.isReshoot = !!updates.isReshoot;
   }
+  if ("isCarryOver" in updates) {
+    setData.isCarryOver = !!updates.isCarryOver;
+  }
   const shotFields = ["galleryShots", "detailsShots", "miscShots"] as const;
   for (const f of shotFields) {
     if (f in updates) {
@@ -139,6 +144,7 @@ router.patch("/products/bulk-update", async (req, res): Promise<void> => {
     const revertProducts: { id: number; shortname: string; keyCode: string | null; reason: string }[] = [];
     for (const p of products) {
       if (!UPLOAD_AT_OR_BEYOND_READY.includes(p.uploadStatus)) continue;
+      if (p.isCarryOver) continue;
       const simulated = { ...p, ...setData };
       const missing = isMissingRequired(simulated);
       if (missing) {
@@ -159,7 +165,12 @@ router.patch("/products/bulk-update", async (req, res): Promise<void> => {
     const failProducts: { id: number; shortname: string; keyCode: string | null; reason: string }[] = [];
 
     for (const p of products) {
-      const missing = isMissingRequired(p);
+      const simulated = { ...p, ...setData };
+      if (simulated.isCarryOver) {
+        passIds.push(p.id);
+        continue;
+      }
+      const missing = isMissingRequired(simulated);
       if (missing) {
         failProducts.push({ id: p.id, shortname: p.shortname, keyCode: p.keyCode, reason: missing });
       } else {
@@ -198,7 +209,7 @@ router.get("/products/:id", async (req, res): Promise<void> => {
 router.patch("/products/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const allowedFields = ["gender", "productType", "shortname", "style", "design", "keyCode", "colour", "galleryShots", "detailsShots", "miscShots", "deliveryStatus", "factoryDelayed", "isReshoot", "uploadStatus"] as const;
+  const allowedFields = ["gender", "productType", "shortname", "style", "design", "keyCode", "colour", "galleryShots", "detailsShots", "miscShots", "deliveryStatus", "factoryDelayed", "isReshoot", "isCarryOver", "uploadStatus"] as const;
   const updates: Record<string, any> = {};
   for (const key of allowedFields) {
     if (key in req.body) updates[key] = req.body[key];
@@ -208,7 +219,7 @@ router.patch("/products/:id", async (req, res): Promise<void> => {
   const [product] = await db.update(productsTable).set(updates).where(eq(productsTable.id, id)).returning();
   if (!product) { res.status(404).json({ error: "Not found" }); return; }
 
-  if (updates.uploadStatus && UPLOAD_AT_OR_BEYOND_READY.includes(updates.uploadStatus)) {
+  if (updates.uploadStatus && UPLOAD_AT_OR_BEYOND_READY.includes(updates.uploadStatus) && !product.isCarryOver) {
     const missing = isMissingRequired(product);
     if (missing) {
       const [reverted] = await db.update(productsTable)

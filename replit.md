@@ -29,7 +29,8 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 - **Products** (within a project): Each tracks Gender, Product Type, Shortname (model name), Style, Design, Key Code, Colour. Shot types: Gallery Shots, Details Shots, Misc Shots (text fields). Delivery Status (Not Ordered, Ordered, In Transit, Delayed at Factory, Delivered/In GBG). Factory Delayed flag. Upload Status is an 8-stage pipeline: Not Started (grey #9ca3af) → In the Studio (cyan #06b6d4) → Ready for Selection (pink #ec4899) → Ready for Retouch (orange #f97316) → In Post Production (blue #3b82f6) → Post Production - Done (purple #8b5cf6) → Ready for Upload (yellow #eab308) → Uploaded (green #22c55e). Expandable rows with inline editing.
 - **Filtering**: Gender, product type, model name, delivery status, upload status, shot missing (gallery/details/misc/missing required), delayed only, reshoot only, text search
 - **Bulk Selection & Editing**: Select All (respects current filters), individual row checkboxes, floating action bar with Change Upload Status, Change Delivery Status, Toggle Factory Delayed, Remove Reshoot, Clear Selection
-- **Missing Shots Quality Gate**: When upload status is set to "Ready for Upload" or beyond, products missing required shots (Gallery for all types; Gallery + Details for Jackets/Pants) are automatically reverted to "Not Started" with an amber badge. Works for both single and bulk updates. Badge auto-disappears when shots are filled in.
+- **Missing Shots Quality Gate**: When upload status is set to "Ready for Upload" or beyond, products missing required shots (Gallery for all types; Gallery + Details for Jackets/Pants) are automatically reverted to "Not Started" with an amber badge. Works for both single and bulk updates. Badge auto-disappears when shots are filled in. **Carry Over products bypass the quality gate entirely.**
+- **Carry Over**: Products reused from a previous season can be tagged as "Carry Over" (blue badge). Carry-over products are exempt from missing-shots warnings and quality gate enforcement. Toggle in expanded product detail, bulk toggle in action bar. Filterable via "Shot Missing → Carry Over". Excluded from "Missing Required" filter results.
 - **Comments**: Any user can comment on a product, showing who and when
 - **Capture Sessions**: Auto-collected from Gallery/Details/Misc shot fields across all products. Groups products by session name and shot type. Shows parsed dates from session names. Expandable to show product table. "Change status for all" bulk updates.
 - **Excel Import**: Upload .xlsx files to bulk-import products. Multi-sheet support: previews all sheets, lets user pick which to import, auto-detects season from filename. Creates one project per selected sheet. Sheet names map to brands: DOPE→Dope Snow, MONTEC→Montec. Also supports per-project import.
@@ -39,7 +40,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén
 ### Database Tables
 - `users`: id, name, created_at
 - `projects`: id, name, brand, season, created_at, updated_at
-- `products`: id, project_id (FK), gender, product_type, shortname, style, design, key_code, colour, gallery_shots, details_shots, misc_shots, delivery_status, factory_delayed, is_reshoot, upload_status, created_at, updated_at
+- `products`: id, project_id (FK), gender, product_type, shortname, style, design, key_code, colour, gallery_shots, details_shots, misc_shots, delivery_status, factory_delayed, is_reshoot, is_carry_over, upload_status, created_at, updated_at
 - `comments`: id, product_id (FK), user_id (FK), text, created_at
 - `studio_sessions`: id, date, model_name, brand, shot_type, notes, created_by_id, created_at
 

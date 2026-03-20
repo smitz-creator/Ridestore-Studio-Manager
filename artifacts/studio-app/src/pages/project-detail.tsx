@@ -66,7 +66,8 @@ const uploadColor = (v: string) => {
 
 const REQUIRES_DETAILS_TYPES = ["jacket", "pants", "pant"];
 
-function getMissingShots(product: { productType: string; galleryShots: string | null; detailsShots: string | null }): string | null {
+function getMissingShots(product: { productType: string; galleryShots: string | null; detailsShots: string | null; isCarryOver?: boolean }): string | null {
+  if (product.isCarryOver) return null;
   const needsGallery = !product.galleryShots?.trim();
   const needsDetails = REQUIRES_DETAILS_TYPES.some(t => product.productType.toLowerCase().includes(t)) && !product.detailsShots?.trim();
   if (needsGallery && needsDetails) return "Missing Gallery & Details";
@@ -249,6 +250,13 @@ export default function ProjectDetail() {
   const handleBulkRemoveReshoot = () => {
     const ids = [...selectedIds];
     bulkMut.mutate({ productIds: ids, updates: { isReshoot: false } });
+  };
+
+  const handleBulkToggleCarryOver = () => {
+    const ids = [...selectedIds];
+    const selectedProducts = products?.filter((p: any) => selectedIds.has(p.id)) || [];
+    const anyNotCarryOver = selectedProducts.some((p: any) => !p.isCarryOver);
+    bulkMut.mutate({ productIds: ids, updates: { isCarryOver: anyNotCarryOver } });
   };
 
   const CLEAR_SHOT_OPTIONS = [
@@ -453,6 +461,7 @@ export default function ProjectDetail() {
                     <SelectItem value="gallery">Gallery</SelectItem>
                     <SelectItem value="details">Details</SelectItem>
                     <SelectItem value="misc">Misc</SelectItem>
+                    <SelectItem value="carry_over">Carry Over</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -552,6 +561,15 @@ export default function ProjectDetail() {
                 <RotateCcw className="w-3.5 h-3.5 mr-1" />
                 Remove Reshoot
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkToggleCarryOver}
+                disabled={bulkMut.isPending}
+                className="text-xs h-8"
+              >
+                Toggle Carry Over
+              </Button>
               <Select onValueChange={handleBulkClearShots} disabled={bulkMut.isPending}>
                 <SelectTrigger className="w-[160px] h-8 text-xs">
                   <SelectValue placeholder="Clear Shots..." />
@@ -649,6 +667,9 @@ function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect 
               {product.colour && <span className="text-xs text-muted-foreground">&middot; {product.colour}</span>}
               {product.isReshoot && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800">Reshoot</span>
+              )}
+              {product.isCarryOver && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">Carry Over</span>
               )}
               {product.factoryDelayed && (
                 <span className="flex items-center gap-1 text-xs text-destructive">
@@ -779,6 +800,13 @@ function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect 
                   onCheckedChange={c => updateMut.mutate({ factoryDelayed: !!c })}
                 />
                 Factory Delayed
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={product.isCarryOver}
+                  onCheckedChange={c => updateMut.mutate({ isCarryOver: !!c })}
+                />
+                Carry Over
               </label>
               {product.isReshoot && (
                 <button
