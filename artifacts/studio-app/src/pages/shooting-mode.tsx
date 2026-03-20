@@ -895,17 +895,19 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className={cn("font-medium text-sm", isChecked && "line-through text-muted-foreground")}>
-                    {p.shortname}
+                  <span className={cn("font-semibold font-mono", isChecked && "line-through text-muted-foreground")}>
+                    {p.keyCode || "—"}
                   </span>
-                  <span className="text-xs text-muted-foreground">{p.productType}</span>
+                  {p.colour && (
+                    <span className={cn("text-sm", isChecked ? "text-muted-foreground line-through" : "text-foreground")}>· {p.colour}</span>
+                  )}
                   {p.isReshoot && (
                     <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-800 hover:bg-orange-100 shrink-0">Reshoot</Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {p.colour && <span>{p.colour}</span>}
-                  {p.keyCode && <span className="font-mono">{p.keyCode}</span>}
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>{p.shortname}</span>
+                  <span>· {p.productType}</span>
                 </div>
               </div>
               <Badge variant="outline" className={cn("text-[10px] shrink-0", isChecked ? "bg-green-100 text-green-800" : "bg-cyan-100 text-cyan-800")}>
