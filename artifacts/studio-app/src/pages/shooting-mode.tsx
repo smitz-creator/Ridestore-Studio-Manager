@@ -917,6 +917,24 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
               ) : (
                 <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
               )}
+              {p.keyCode && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(p.keyCode); toast({ title: `Copied ${p.keyCode}` }); }}
+                    className="flex items-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded hover:bg-muted"
+                    title="Copy Key Code"
+                  >
+                    <Copy className="w-3 h-3" /><span className="text-[10px] font-medium">G</span>
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(`${p.keyCode}_DETAILS`); toast({ title: `Copied ${p.keyCode}_DETAILS` }); }}
+                    className="flex items-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded hover:bg-muted"
+                    title="Copy Key Code for Details"
+                  >
+                    <Copy className="w-3 h-3" /><span className="text-[10px] font-medium">D</span>
+                  </button>
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className={cn("font-semibold font-mono", isChecked && "line-through text-muted-foreground")}>
