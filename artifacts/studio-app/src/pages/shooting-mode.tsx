@@ -50,7 +50,6 @@ type ShootingState = {
   productType: typeof PRODUCT_TYPES[number] | null;
   sessionName: string;
   selectedProductIds: number[];
-  checkedProductIds: Set<number>;
   previousStatuses: Map<number, string>;
   continueMode: boolean;
 };
@@ -66,7 +65,6 @@ export default function ShootingMode() {
     productType: null,
     sessionName: "",
     selectedProductIds: [],
-    checkedProductIds: new Set(),
     previousStatuses: new Map(),
     continueMode: false,
   });
@@ -261,34 +259,12 @@ export default function ShootingMode() {
       ...s,
       step: 3,
       selectedProductIds: [...s.selectedProductIds, ...availableIds],
-      checkedProductIds: new Set(s.checkedProductIds),
       previousStatuses: new Map([...s.previousStatuses, ...prevStatuses]),
     }));
 
     await bulkUpdateMut.mutateAsync({ productIds: availableIds, uploadStatus: "in_the_studio" });
     toast({ title: `${availableIds.length} products moved to "In the Studio"` });
   };
-
-  const handleCheckProduct = (id: number) => {
-    setState(s => {
-      const next = new Set(s.checkedProductIds);
-      next.add(id);
-      return { ...s, checkedProductIds: next };
-    });
-    bulkUpdateMut.mutate({ productIds: [id], uploadStatus: "ready_for_selection" });
-  };
-
-  const handleUncheckProduct = (id: number) => {
-    setState(s => {
-      const next = new Set(s.checkedProductIds);
-      next.delete(id);
-      return { ...s, checkedProductIds: next };
-    });
-    bulkUpdateMut.mutate({ productIds: [id], uploadStatus: "in_the_studio" });
-  };
-
-  const allChecked = state.selectedProductIds.length > 0 &&
-    state.selectedProductIds.every(id => state.checkedProductIds.has(id));
 
   const handleEndSession = () => {
     setState(s => ({ ...s, step: 4 }));
@@ -312,15 +288,27 @@ export default function ShootingMode() {
     setStep2Selected(new Set());
   };
 
+  const productHasAnyShot = React.useCallback((id: number) => {
+    const p = allProducts?.find((pr: any) => pr.id === id);
+    if (!p) return false;
+    const sn = state.sessionName;
+    const inField = (field: string) => {
+      const val = p[field];
+      if (!val) return false;
+      return val.split(",").map((s: string) => s.trim()).filter(Boolean).includes(sn);
+    };
+    return inField("galleryShots") || inField("detailsShots") || inField("miscShots") || p.isCarryOver;
+  }, [allProducts, state.sessionName]);
+
   const handleCloseSession = async () => {
-    const uncheckedIds = state.selectedProductIds.filter(id => !state.checkedProductIds.has(id));
+    const uncheckedIds = state.selectedProductIds.filter(id => !productHasAnyShot(id));
 
     if (uncheckedIds.length > 0) {
       for (const id of uncheckedIds) {
         const prevStatus = state.previousStatuses.get(id) || "not_started";
         await bulkUpdateMut.mutateAsync({ productIds: [id], uploadStatus: prevStatus });
       }
-      toast({ title: `${uncheckedIds.length} unchecked products reverted to previous status` });
+      toast({ title: `${uncheckedIds.length} products without shots reverted to previous status` });
     }
 
     setState({
@@ -330,7 +318,6 @@ export default function ShootingMode() {
       productType: null,
       sessionName: "",
       selectedProductIds: [],
-      checkedProductIds: new Set(),
       previousStatuses: new Map(),
       continueMode: false,
     });
@@ -349,7 +336,6 @@ export default function ShootingMode() {
       productType: null,
       sessionName: "",
       selectedProductIds: [],
-      checkedProductIds: new Set(),
       previousStatuses: new Map(),
       continueMode: false,
     });
@@ -411,20 +397,20 @@ export default function ShootingMode() {
           <Step3
             state={state}
             products={allProducts || []}
-            onCheck={handleCheckProduct}
-            onUncheck={handleUncheckProduct}
+            onUpdateProduct={(id: number, data: any) => updateProductMut.mutateAsync({ id, data })}
             onCopy={handleCopySessionName}
             onEnd={handleEndSession}
             onAddMore={handleBackToSelection}
             onClose={handleCloseSession}
-            allChecked={allChecked}
-            closingLoading={bulkUpdateMut.isPending}
+            updating={updateProductMut.isPending}
+            closingLoading={bulkUpdateMut.isPending || updateProductMut.isPending}
           />
         )}
 
         {state.step === 4 && (
           <Step4
             state={state}
+            products={allProducts || []}
             onContinue={handleContinue}
             onClose={handleCloseSession}
             loading={bulkUpdateMut.isPending}
@@ -795,16 +781,15 @@ function StepConfirm({ state, allProducts, selected, available, onToggle, onConf
   );
 }
 
-function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, onClose, allChecked, closingLoading }: {
+function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onClose, updating, closingLoading }: {
   state: ShootingState;
   products: any[];
-  onCheck: (id: number) => void;
-  onUncheck: (id: number) => void;
+  onUpdateProduct: (id: number, data: any) => void;
   onCopy: () => void;
   onEnd: () => void;
   onAddMore: () => void;
   onClose: () => void;
-  allChecked: boolean;
+  updating: boolean;
   closingLoading: boolean;
 }) {
   const sessionProducts = React.useMemo(
@@ -812,9 +797,35 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
     [products, state.selectedProductIds]
   );
   const { toast } = useToast();
-  const checkedCount = state.checkedProductIds.size;
   const total = state.selectedProductIds.length;
-  const progress = total > 0 ? (checkedCount / total) * 100 : 0;
+  const sessionName = state.sessionName;
+
+  const hasShot = (p: any, field: string) => {
+    const val = p[field];
+    if (!val) return false;
+    return val.split(",").map((s: string) => s.trim()).filter(Boolean).includes(sessionName);
+  };
+
+  const gCount = sessionProducts.filter((p: any) => hasShot(p, "galleryShots")).length;
+  const dCount = sessionProducts.filter((p: any) => hasShot(p, "detailsShots")).length;
+  const mCount = sessionProducts.filter((p: any) => hasShot(p, "miscShots")).length;
+  const coCount = sessionProducts.filter((p: any) => p.isCarryOver).length;
+
+  const toggleShot = (product: any, field: string) => {
+    const current = product[field] || "";
+    const parts = current.split(",").map((s: string) => s.trim()).filter(Boolean);
+    if (parts.includes(sessionName)) {
+      const next = parts.filter((s: string) => s !== sessionName).join(", ");
+      onUpdateProduct(product.id, { [field]: next });
+    } else {
+      const next = parts.length > 0 ? `${current}, ${sessionName}` : sessionName;
+      onUpdateProduct(product.id, { [field]: next });
+    }
+  };
+
+  const toggleCarryOver = (product: any) => {
+    onUpdateProduct(product.id, { isCarryOver: !product.isCarryOver });
+  };
 
   const keyCodes = sessionProducts.map((p: any) => p.keyCode).filter(Boolean);
 
@@ -828,6 +839,10 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
     toast({ title: `Copied ${keyCodes.length} Key Codes for Details` });
   };
 
+  const allHaveAtLeastOne = sessionProducts.every((p: any) =>
+    hasShot(p, "galleryShots") || hasShot(p, "detailsShots") || hasShot(p, "miscShots") || p.isCarryOver
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -836,7 +851,7 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
           <div>
             <h1 className="text-xl font-bold">Live Tracking</h1>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-mono text-muted-foreground">{state.sessionName}</span>
+              <span className="text-sm font-mono text-muted-foreground">{sessionName}</span>
               <button onClick={onCopy} className="text-muted-foreground hover:text-foreground transition-colors">
                 <Copy className="w-3.5 h-3.5" />
               </button>
@@ -848,22 +863,29 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
             <Plus className="w-4 h-4 mr-1" />
             Add More
           </Button>
-          <Button variant="outline" size="sm" onClick={onEnd}>
+          <Button variant="outline" size="sm" onClick={onEnd} disabled={updating}>
             End Session
           </Button>
         </div>
       </div>
 
       <div className="bg-card border rounded-lg p-4 space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium">{checkedCount}/{total} shot</span>
-          <span className="text-muted-foreground">{Math.round(progress)}%</span>
+        <div className="flex items-center gap-4 text-sm font-medium flex-wrap">
+          <span className="text-green-700">G: {gCount}/{total}</span>
+          <span className="text-green-700">D: {dCount}/{total}</span>
+          <span className="text-green-700">M: {mCount}/{total}</span>
+          <span className="text-blue-700">CO: {coCount}/{total}</span>
         </div>
-        <div className="w-full h-3 rounded-full overflow-hidden bg-gray-100">
-          <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${progress}%`, backgroundColor: "#22c55e" }}
-          />
+        <div className="flex items-center gap-1 h-3">
+          <div className="flex-1 h-full rounded-full overflow-hidden bg-gray-100" title={`Gallery: ${gCount}/${total}`}>
+            <div className="h-full rounded-full transition-all duration-300 bg-green-500" style={{ width: `${total > 0 ? (gCount / total) * 100 : 0}%` }} />
+          </div>
+          <div className="flex-1 h-full rounded-full overflow-hidden bg-gray-100" title={`Details: ${dCount}/${total}`}>
+            <div className="h-full rounded-full transition-all duration-300 bg-emerald-500" style={{ width: `${total > 0 ? (dCount / total) * 100 : 0}%` }} />
+          </div>
+          <div className="flex-1 h-full rounded-full overflow-hidden bg-gray-100" title={`Misc: ${mCount}/${total}`}>
+            <div className="h-full rounded-full transition-all duration-300 bg-teal-500" style={{ width: `${total > 0 ? (mCount / total) * 100 : 0}%` }} />
+          </div>
         </div>
       </div>
 
@@ -878,10 +900,10 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
         </Button>
       </div>
 
-      {allChecked && (
+      {allHaveAtLeastOne && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center text-green-800 space-y-3">
           <CheckCircle2 className="w-8 h-8 mx-auto" />
-          <p className="font-medium">All products shot!</p>
+          <p className="font-medium">All products have at least one shot type!</p>
           <div className="flex items-center justify-center gap-2">
             <Button variant="outline" size="sm" onClick={onAddMore}>
               <Plus className="w-4 h-4 mr-1" />
@@ -897,37 +919,32 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
 
       <div className="space-y-1">
         {sessionProducts.map(p => {
-          const isChecked = state.checkedProductIds.has(p.id);
+          const gActive = hasShot(p, "galleryShots");
+          const dActive = hasShot(p, "detailsShots");
+          const mActive = hasShot(p, "miscShots");
+          const coActive = p.isCarryOver;
+          const anyActive = gActive || dActive || mActive || coActive;
           return (
             <div
               key={p.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => isChecked ? onUncheck(p.id) : onCheck(p.id)}
-              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); isChecked ? onUncheck(p.id) : onCheck(p.id); } }}
               className={cn(
-                "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left cursor-pointer select-none",
-                isChecked
-                  ? "bg-green-50 border-green-200"
-                  : "bg-card border-border hover:border-primary/50"
+                "w-full flex items-center gap-2 p-3 rounded-lg border transition-all select-none",
+                anyActive
+                  ? "bg-green-50/50 border-green-200"
+                  : "bg-card border-border"
               )}
             >
-              {isChecked ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-              ) : (
-                <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
-              )}
               {p.keyCode && (
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(p.keyCode); toast({ title: `Copied ${p.keyCode}` }); }}
+                    onClick={() => { navigator.clipboard.writeText(p.keyCode); toast({ title: `Copied ${p.keyCode}` }); }}
                     className="flex items-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded hover:bg-muted"
                     title="Copy Key Code"
                   >
                     <Copy className="w-3 h-3" /><span className="text-[10px] font-medium">G</span>
                   </button>
                   <button
-                    onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(`${p.keyCode}_DETAILS`); toast({ title: `Copied ${p.keyCode}_DETAILS` }); }}
+                    onClick={() => { navigator.clipboard.writeText(`${p.keyCode}_DETAILS`); toast({ title: `Copied ${p.keyCode}_DETAILS` }); }}
                     className="flex items-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded hover:bg-muted"
                     title="Copy Key Code for Details"
                   >
@@ -937,11 +954,11 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className={cn("font-semibold font-mono", isChecked && "line-through text-muted-foreground")}>
+                  <span className="font-semibold font-mono">
                     {p.keyCode || "—"}
                   </span>
                   {p.colour && (
-                    <span className={cn("text-sm", isChecked ? "text-muted-foreground line-through" : "text-foreground")}>· {p.colour}</span>
+                    <span className="text-sm text-foreground">· {p.colour}</span>
                   )}
                   {p.isReshoot && (
                     <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-800 hover:bg-orange-100 shrink-0">Reshoot</Badge>
@@ -952,9 +969,56 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
                   <span>· {p.productType}</span>
                 </div>
               </div>
-              <Badge variant="outline" className={cn("text-[10px] shrink-0", isChecked ? "bg-green-100 text-green-800" : "bg-cyan-100 text-cyan-800")}>
-                {isChecked ? "Ready for Selection" : "In the Studio"}
-              </Badge>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => toggleShot(p, "galleryShots")}
+                  className={cn(
+                    "w-8 h-7 rounded text-xs font-bold transition-all",
+                    gActive
+                      ? "bg-green-600 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  )}
+                  title={gActive ? "Gallery ✓ — click to remove" : "Mark Gallery shot"}
+                >
+                  G
+                </button>
+                <button
+                  onClick={() => toggleShot(p, "detailsShots")}
+                  className={cn(
+                    "w-8 h-7 rounded text-xs font-bold transition-all",
+                    dActive
+                      ? "bg-green-600 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  )}
+                  title={dActive ? "Details ✓ — click to remove" : "Mark Details shot"}
+                >
+                  D
+                </button>
+                <button
+                  onClick={() => toggleShot(p, "miscShots")}
+                  className={cn(
+                    "w-8 h-7 rounded text-xs font-bold transition-all",
+                    mActive
+                      ? "bg-green-600 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  )}
+                  title={mActive ? "Misc ✓ — click to remove" : "Mark Misc shot"}
+                >
+                  M
+                </button>
+                <button
+                  onClick={() => toggleCarryOver(p)}
+                  className={cn(
+                    "w-8 h-7 rounded text-[10px] font-bold transition-all",
+                    coActive
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  )}
+                  title={coActive ? "Carry Over ✓ — click to remove" : "Mark as Carry Over"}
+                >
+                  CO
+                </button>
+              </div>
             </div>
           );
         })}
@@ -963,15 +1027,22 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
   );
 }
 
-function Step4({ state, onContinue, onClose, loading }: {
+function Step4({ state, products, onContinue, onClose, loading }: {
   state: ShootingState;
+  products: any[];
   onContinue: () => void;
   onClose: () => void;
   loading: boolean;
 }) {
-  const checked = state.checkedProductIds.size;
+  const sessionProducts = products.filter(p => state.selectedProductIds.includes(p.id));
   const total = state.selectedProductIds.length;
-  const unchecked = total - checked;
+  const hasShot = (p: any, field: string) => {
+    const val = p[field];
+    if (!val) return false;
+    return val.split(",").map((s: string) => s.trim()).filter(Boolean).includes(state.sessionName);
+  };
+  const shotCount = sessionProducts.filter(p => hasShot(p, "galleryShots") || hasShot(p, "detailsShots") || hasShot(p, "miscShots") || p.isCarryOver).length;
+  const unchecked = total - shotCount;
 
   return (
     <div className="space-y-6">
@@ -984,7 +1055,7 @@ function Step4({ state, onContinue, onClose, loading }: {
       <div className="bg-card border rounded-lg p-6 space-y-3">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Products shot</span>
-          <span className="font-medium text-green-600">{checked}</span>
+          <span className="font-medium text-green-600">{shotCount}</span>
         </div>
         {unchecked > 0 && (
           <div className="flex justify-between text-sm">

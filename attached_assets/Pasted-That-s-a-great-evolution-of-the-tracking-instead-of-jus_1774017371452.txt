@@ -1,0 +1,42 @@
+That's a great evolution of the tracking — instead of just "shot/not shot" you're tracking exactly which shot types are done per product. Here's the prompt for Replit:
+
+---
+
+**Feature: Multi-type tick-off system in Live Tracking**
+
+Replace the current single radio/tick button on each product card in Live Tracking with a multi-option tick-off system. Each product can be ticked off for specific shot types independently.
+
+**Layout per card:**
+```
+📋G  📋D    H0863 · Black                          [G] [D] [M] [CO]
+            Adept W · Snowboard Jacket    In the Studio
+```
+
+- **Left side:** Keep the copy-to-clipboard buttons (📋G and 📋D) on the far left as they are now.
+- **Right side of the text (before the status badge):** Add 4 small toggle buttons: **G** (Gallery), **D** (Details), **M** (Misc), **CO** (Carry Over)
+
+**Tick-off behavior:**
+
+1. **G (Gallery)** — when ticked, marks this product's Gallery shot as done for this session. Button fills in / highlights green. The product stays visible and the D, M, and CO buttons remain available.
+
+2. **D (Details)** — when ticked, marks this product's Details shot as done for this session. Button fills in / highlights green. The product stays visible and G, M, and CO buttons remain available.
+
+3. **M (Misc)** — when ticked, marks this product's Misc shot as done for this session. Button fills in / highlights green.
+
+4. **CO (Carry Over)** — when ticked, marks this product as Carry Over. Button fills in / highlights blue or grey (distinct from the shot buttons). This tags the product with the Carry Over flag.
+
+5. **A product can have multiple types ticked.** For example, G and D can both be ticked on the same product if both Gallery and Details were shot in the same session. Any combination is valid.
+
+6. **Progress bar update:** The progress bar at the top (currently "0/21 shot") should now track based on the shot type of the session. If this is a Gallery session, count products with G ticked. If it's a Details session, count products with D ticked. Or alternatively, show a combined count like "G: 5/21 · D: 3/21" so the team can see progress for each type.
+
+7. **When G is ticked**, save the session name to that product's Gallery Shots field. **When D is ticked**, save the session name to the Details Shots field. **When M is ticked**, save to Misc Shots field. **When CO is ticked**, set the Carry Over flag on the product.
+
+8. **Ticking should be toggleable** — clicking a ticked button again unticks it (removes the session name from that field / removes the flag).
+
+9. **Remove the old single radio/circle button** — it's replaced by these 4 specific buttons.
+
+10. **"Copy all for Gallery" and "Copy all for Details" buttons** at the top should remain unchanged.
+
+---
+
+Paste that in and your live tracking becomes a proper multi-shot logging system. Each product clearly shows what's been done and what's still needed, and the session names get saved to the right fields automatically. Let me know how it looks.
