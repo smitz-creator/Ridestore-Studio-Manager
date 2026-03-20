@@ -2,6 +2,18 @@ import { Router, type IRouter } from "express";
 import { eq, inArray } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 
+const REQUIRES_DETAILS = ["Jacket", "Pants", "Pant"];
+const UPLOAD_AT_OR_BEYOND_READY = ["ready_for_upload", "uploaded"];
+
+function isMissingRequired(product: { productType: string; galleryShots: string | null; detailsShots: string | null }): string | null {
+  const needsGallery = !product.galleryShots?.trim();
+  const needsDetails = REQUIRES_DETAILS.some(t => product.productType.toLowerCase().includes(t.toLowerCase())) && !product.detailsShots?.trim();
+  if (needsGallery && needsDetails) return "Missing Gallery & Details";
+  if (needsGallery) return "Missing Gallery";
+  if (needsDetails) return "Missing Details";
+  return null;
+}
+
 const router: IRouter = Router();
 
 interface CaptureSession {
@@ -86,6 +98,35 @@ router.patch("/capture-sessions/bulk-status", async (req, res): Promise<void> =>
     res.status(400).json({ error: "productIds (array) and valid uploadStatus required" });
     return;
   }
+
+  if (UPLOAD_AT_OR_BEYOND_READY.includes(uploadStatus)) {
+    const products = await db.select().from(productsTable).where(inArray(productsTable.id, productIds));
+    const passIds: number[] = [];
+    const revertIds: number[] = [];
+
+    for (const p of products) {
+      if (p.isCarryOver) {
+        passIds.push(p.id);
+        continue;
+      }
+      const missing = isMissingRequired(p);
+      if (missing) {
+        revertIds.push(p.id);
+      } else {
+        passIds.push(p.id);
+      }
+    }
+
+    if (passIds.length > 0) {
+      await db.update(productsTable).set({ uploadStatus }).where(inArray(productsTable.id, passIds));
+    }
+    if (revertIds.length > 0) {
+      await db.update(productsTable).set({ uploadStatus: "not_started" }).where(inArray(productsTable.id, revertIds));
+    }
+    res.json({ updated: passIds.length, reverted: revertIds.length });
+    return;
+  }
+
   await db.update(productsTable).set({ uploadStatus }).where(inArray(productsTable.id, productIds));
   res.json({ updated: productIds.length });
 });
