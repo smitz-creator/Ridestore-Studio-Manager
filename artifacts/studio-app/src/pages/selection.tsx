@@ -90,12 +90,20 @@ export default function Selection() {
       for (const id of prev) {
         if (remaining.has(id)) next.add(id);
       }
+      for (const p of allProducts) {
+        if (p.isCarryOver) next.add(p.id);
+      }
       return next;
     });
   }, [allProducts]);
 
   const toggleProduct = async (id: number) => {
-    if (completedIds.has(id)) return;
+    const product = allProducts.find(p => p.id === id);
+    if (completedIds.has(id)) {
+      if (!product?.isCarryOver) return;
+      setCompletedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+      return;
+    }
     setCompletedIds(prev => new Set(prev).add(id));
     try {
       await bulkUpdateMut.mutateAsync({ productIds: [id], uploadStatus: "ready_for_retouch" });
@@ -224,7 +232,7 @@ export default function Selection() {
                       >
                         <button
                           onClick={() => toggleProduct(p.id)}
-                          disabled={bulkUpdateMut.isPending || isDone}
+                          disabled={bulkUpdateMut.isPending || (isDone && !p.isCarryOver)}
                           className={`w-7 h-7 rounded-md flex items-center justify-center border-2 transition-all flex-shrink-0 ${
                             isDone
                               ? "bg-green-600 border-green-600 text-white"
