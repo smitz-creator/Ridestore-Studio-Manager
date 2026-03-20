@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, or, isNull } from "drizzle-orm";
+import { eq, and, ilike, or, isNull, inArray } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -55,6 +55,47 @@ router.post("/products", async (req, res): Promise<void> => {
   if (req.body.uploadStatus) values.uploadStatus = req.body.uploadStatus;
   const [product] = await db.insert(productsTable).values(values).returning();
   res.status(201).json(product);
+});
+
+router.patch("/products/bulk-update", async (req, res): Promise<void> => {
+  const { productIds, updates } = req.body;
+  if (!Array.isArray(productIds) || !productIds.length) {
+    res.status(400).json({ error: "productIds array required" });
+    return;
+  }
+  if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
+    res.status(400).json({ error: "updates object required" });
+    return;
+  }
+  const validUploadStatuses = ["not_started", "in_the_studio", "ready_for_selection", "ready_for_retouch", "in_post_production", "post_production_done", "ready_for_upload", "uploaded"];
+  const validDeliveryStatuses = ["not_ordered", "ordered", "in_transit", "delayed_at_factory", "delivered"];
+  const setData: Record<string, any> = {};
+  if ("uploadStatus" in updates) {
+    if (!validUploadStatuses.includes(updates.uploadStatus)) {
+      res.status(400).json({ error: "Invalid uploadStatus" });
+      return;
+    }
+    setData.uploadStatus = updates.uploadStatus;
+  }
+  if ("deliveryStatus" in updates) {
+    if (!validDeliveryStatuses.includes(updates.deliveryStatus)) {
+      res.status(400).json({ error: "Invalid deliveryStatus" });
+      return;
+    }
+    setData.deliveryStatus = updates.deliveryStatus;
+  }
+  if ("factoryDelayed" in updates) {
+    setData.factoryDelayed = !!updates.factoryDelayed;
+  }
+  if ("isReshoot" in updates) {
+    setData.isReshoot = !!updates.isReshoot;
+  }
+  if (Object.keys(setData).length === 0) {
+    res.status(400).json({ error: "No valid fields to update" });
+    return;
+  }
+  await db.update(productsTable).set(setData).where(inArray(productsTable.id, productIds));
+  res.json({ updated: productIds.length });
 });
 
 router.get("/products/:id", async (req, res): Promise<void> => {

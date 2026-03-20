@@ -149,6 +149,7 @@ export default function ProjectDetail() {
       qc.invalidateQueries({ queryKey: ["projects"] });
       const count = vars.productIds.length;
       toast({ title: `Updated ${count} product${count !== 1 ? "s" : ""}` });
+      setSelectedIds(new Set());
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
