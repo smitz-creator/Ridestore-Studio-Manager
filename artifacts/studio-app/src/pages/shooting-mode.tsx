@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft, ArrowRight, Check, Copy, X, Camera,
-  CheckCircle2, Circle, Loader2
+  CheckCircle2, Circle, Loader2, ChevronDown, ChevronRight,
+  AlertTriangle, Plus
 } from "lucide-react";
 
 const BRANDS = [
@@ -35,8 +36,10 @@ const PRODUCT_TYPES = [
   { id: "LENS", label: "LENS", types: ["Replacement Lens Ski"] },
 ];
 
+type ShootingStep = 1 | 2 | "confirm" | 3 | 4;
+
 type ShootingState = {
-  step: 1 | 2 | 3 | 4;
+  step: ShootingStep;
   brand: typeof BRANDS[number] | null;
   gender: typeof GENDERS[number] | null;
   productType: typeof PRODUCT_TYPES[number] | null;
@@ -83,16 +86,15 @@ export default function ShootingMode() {
     },
   });
 
-  const sessionName = React.useMemo(() => {
-    if (!state.brand || !state.gender || !state.productType) return "";
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const month = now.getMonth();
-    const seasonPrefix = month >= 3 && month <= 8 ? "SS" : "FW";
-    const yr = String(now.getFullYear()).slice(-2);
-    return `${state.brand.id}_${state.gender.id}_${state.productType.id}_${seasonPrefix}${yr}_${dd}.${mm}`;
-  }, [state.brand, state.gender, state.productType]);
+  const updateProductMut = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      api.updateProduct(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["all-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
 
   const filteredProducts = React.useMemo(() => {
     if (!allProducts || !state.brand) return [];
@@ -125,18 +127,16 @@ export default function ShootingMode() {
   }, [allProducts, projects, state.brand, state.gender, state.productType, state.continueMode]);
 
   const models = React.useMemo(() => {
-    const set = new Set(filteredProducts.map((p: any) => p.shortname).filter(Boolean));
-    return [...set].sort();
+    const map = new Map<string, number>();
+    for (const p of filteredProducts) {
+      const key = p.shortname || "Unknown";
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [filteredProducts]);
 
-  const [modelFilter, setModelFilter] = React.useState<string>("all");
   const [step2Selected, setStep2Selected] = React.useState<Set<number>>(new Set());
-  const [groupedPromptAnswered, setGroupedPromptAnswered] = React.useState(false);
-
-  const displayProducts = React.useMemo(() => {
-    if (modelFilter === "all") return filteredProducts;
-    return filteredProducts.filter((p: any) => p.shortname === modelFilter);
-  }, [filteredProducts, modelFilter]);
+  const [confirmAvailable, setConfirmAvailable] = React.useState<Set<number>>(new Set());
 
   const handleSelectBrand = (brand: typeof BRANDS[number]) => {
     setState(s => ({ ...s, brand, gender: null, productType: null }));
@@ -161,7 +161,6 @@ export default function ShootingMode() {
       step: 2,
     }));
     setStep2Selected(new Set());
-    setModelFilter("all");
   };
 
   const handleStep2Toggle = (id: number) => {
@@ -173,20 +172,69 @@ export default function ShootingMode() {
     });
   };
 
+  const handleToggleModel = (modelName: string) => {
+    const modelProducts = filteredProducts.filter((p: any) =>
+      (p.shortname || "Unknown") === modelName && !state.selectedProductIds.includes(p.id)
+    );
+    const modelIds = modelProducts.map((p: any) => p.id);
+    const allSelected = modelIds.every(id => step2Selected.has(id));
+
+    setStep2Selected(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        modelIds.forEach(id => next.delete(id));
+      } else {
+        modelIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
   const handleSelectAll = () => {
-    if (step2Selected.size === displayProducts.length) {
+    const availableIds = filteredProducts
+      .filter((p: any) => !state.selectedProductIds.includes(p.id))
+      .map((p: any) => p.id);
+    const allSelected = availableIds.every(id => step2Selected.has(id));
+    if (allSelected) {
       setStep2Selected(new Set());
     } else {
-      setStep2Selected(new Set(displayProducts.map((p: any) => p.id)));
+      setStep2Selected(new Set(availableIds));
     }
   };
 
-  const handleStartShooting = async () => {
-    const ids = [...step2Selected];
-    if (ids.length === 0) return;
+  const handleGoToConfirm = () => {
+    if (step2Selected.size === 0) return;
+    setConfirmAvailable(new Set(step2Selected));
+    setState(s => ({ ...s, step: "confirm" }));
+  };
+
+  const handleConfirmToggle = (id: number) => {
+    setConfirmAvailable(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleConfirmAndStart = async () => {
+    const availableIds = [...confirmAvailable];
+    const unavailableIds = [...step2Selected].filter(id => !confirmAvailable.has(id));
+
+    if (availableIds.length === 0) return;
+
+    for (const id of unavailableIds) {
+      await updateProductMut.mutateAsync({
+        id,
+        data: { factoryDelayed: true, deliveryStatus: "delayed_at_factory" },
+      });
+    }
+    if (unavailableIds.length > 0) {
+      toast({ title: `${unavailableIds.length} product${unavailableIds.length !== 1 ? "s" : ""} marked as factory delayed` });
+    }
 
     const prevStatuses = new Map<number, string>();
-    for (const id of ids) {
+    for (const id of availableIds) {
       const product = allProducts?.find((p: any) => p.id === id);
       if (product) prevStatuses.set(id, product.uploadStatus);
     }
@@ -194,33 +242,31 @@ export default function ShootingMode() {
     setState(s => ({
       ...s,
       step: 3,
-      selectedProductIds: [...s.selectedProductIds, ...ids],
+      selectedProductIds: [...s.selectedProductIds, ...availableIds],
       checkedProductIds: new Set(s.checkedProductIds),
       previousStatuses: new Map([...s.previousStatuses, ...prevStatuses]),
     }));
 
-    await bulkUpdateMut.mutateAsync({ productIds: ids, uploadStatus: "in_the_studio" });
-    toast({ title: `${ids.length} products moved to "In the Studio"` });
+    await bulkUpdateMut.mutateAsync({ productIds: availableIds, uploadStatus: "in_the_studio" });
+    toast({ title: `${availableIds.length} products moved to "In the Studio"` });
   };
 
-  const handleCheckProduct = async (id: number) => {
+  const handleCheckProduct = (id: number) => {
     setState(s => {
       const next = new Set(s.checkedProductIds);
       next.add(id);
       return { ...s, checkedProductIds: next };
     });
-
-    await bulkUpdateMut.mutateAsync({ productIds: [id], uploadStatus: "ready_for_selection" });
+    bulkUpdateMut.mutate({ productIds: [id], uploadStatus: "ready_for_selection" });
   };
 
-  const handleUncheckProduct = async (id: number) => {
+  const handleUncheckProduct = (id: number) => {
     setState(s => {
       const next = new Set(s.checkedProductIds);
       next.delete(id);
       return { ...s, checkedProductIds: next };
     });
-
-    await bulkUpdateMut.mutateAsync({ productIds: [id], uploadStatus: "in_the_studio" });
+    bulkUpdateMut.mutate({ productIds: [id], uploadStatus: "in_the_studio" });
   };
 
   const allChecked = state.selectedProductIds.length > 0 &&
@@ -230,6 +276,15 @@ export default function ShootingMode() {
     setState(s => ({ ...s, step: 4 }));
   };
 
+  const handleBackToSelection = () => {
+    setState(s => ({
+      ...s,
+      step: 2,
+      continueMode: true,
+    }));
+    setStep2Selected(new Set());
+  };
+
   const handleContinue = () => {
     setState(s => ({
       ...s,
@@ -237,7 +292,6 @@ export default function ShootingMode() {
       continueMode: true,
     }));
     setStep2Selected(new Set());
-    setModelFilter("all");
   };
 
   const handleCloseSession = async () => {
@@ -283,6 +337,17 @@ export default function ShootingMode() {
     });
   };
 
+  const sessionName = React.useMemo(() => {
+    if (!state.brand || !state.gender || !state.productType) return "";
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const month = now.getMonth();
+    const seasonPrefix = month >= 3 && month <= 8 ? "SS" : "FW";
+    const yr = String(now.getFullYear()).slice(-2);
+    return `${state.brand.id}_${state.gender.id}_${state.productType.id}_${seasonPrefix}${yr}_${dd}.${mm}`;
+  }, [state.brand, state.gender, state.productType]);
+
   return (
     <Layout>
       <div className="max-w-3xl mx-auto space-y-6">
@@ -299,17 +364,28 @@ export default function ShootingMode() {
         {state.step === 2 && (
           <Step2
             state={state}
-            products={displayProducts}
-            allFilteredProducts={filteredProducts}
+            products={filteredProducts}
             models={models}
-            modelFilter={modelFilter}
             selected={step2Selected}
-            onModelFilter={setModelFilter}
             onToggle={handleStep2Toggle}
+            onToggleModel={handleToggleModel}
             onSelectAll={handleSelectAll}
-            onStart={handleStartShooting}
+            onNext={handleGoToConfirm}
             onBack={() => state.continueMode ? setState(s => ({ ...s, step: 3 })) : handleBackToStep1()}
             loading={bulkUpdateMut.isPending}
+          />
+        )}
+
+        {state.step === "confirm" && (
+          <StepConfirm
+            state={state}
+            allProducts={allProducts || []}
+            selected={step2Selected}
+            available={confirmAvailable}
+            onToggle={handleConfirmToggle}
+            onConfirm={handleConfirmAndStart}
+            onBack={() => setState(s => ({ ...s, step: 2 }))}
+            loading={bulkUpdateMut.isPending || updateProductMut.isPending}
           />
         )}
 
@@ -321,7 +397,10 @@ export default function ShootingMode() {
             onUncheck={handleUncheckProduct}
             onCopy={handleCopySessionName}
             onEnd={handleEndSession}
+            onAddMore={handleBackToSelection}
+            onClose={handleCloseSession}
             allChecked={allChecked}
+            closingLoading={bulkUpdateMut.isPending}
           />
         )}
 
@@ -445,20 +524,39 @@ function Step1({ state, sessionName, onSelectBrand, onSelectGender, onSelectProd
   );
 }
 
-function Step2({ state, products, allFilteredProducts, models, modelFilter, selected, onModelFilter, onToggle, onSelectAll, onStart, onBack, loading }: {
+function Step2({ state, products, models, selected, onToggle, onToggleModel, onSelectAll, onNext, onBack, loading }: {
   state: ShootingState;
   products: any[];
-  allFilteredProducts: any[];
-  models: string[];
-  modelFilter: string;
+  models: [string, number][];
   selected: Set<number>;
-  onModelFilter: (v: string) => void;
   onToggle: (id: number) => void;
+  onToggleModel: (model: string) => void;
   onSelectAll: () => void;
-  onStart: () => void;
+  onNext: () => void;
   onBack: () => void;
   loading: boolean;
 }) {
+  const [expandedModels, setExpandedModels] = React.useState<Set<string>>(new Set());
+
+  const toggleExpand = (model: string) => {
+    setExpandedModels(prev => {
+      const next = new Set(prev);
+      if (next.has(model)) next.delete(model);
+      else next.add(model);
+      return next;
+    });
+  };
+
+  const productsByModel = React.useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const p of products) {
+      const key = p.shortname || "Unknown";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(p);
+    }
+    return map;
+  }, [products]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -476,7 +574,7 @@ function Step2({ state, products, allFilteredProducts, models, modelFilter, sele
 
       {state.continueMode && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-          Continue mode: All product types for {state.brand?.label} are available.
+          All product types for {state.brand?.label} are now available.
         </div>
       )}
 
@@ -486,99 +584,206 @@ function Step2({ state, products, allFilteredProducts, models, modelFilter, sele
         </div>
       )}
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <select
-          value={modelFilter}
-          onChange={e => onModelFilter(e.target.value)}
-          className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-        >
-          <option value="all">All Models ({allFilteredProducts.length})</option>
-          {models.map(m => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+      <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={onSelectAll}>
-          {selected.size === products.length ? "Deselect All" : "Select All"}
+          {selected.size > 0 && products.filter(p => !state.selectedProductIds.includes(p.id)).every(p => selected.has(p.id)) ? "Deselect All" : "Select All"}
         </Button>
+        <span className="text-xs text-muted-foreground">{models.length} models, {products.length} products</span>
       </div>
 
-      <div className="border rounded-lg overflow-hidden max-h-[50vh] overflow-y-auto">
-        {products.length === 0 ? (
+      <div className="border rounded-lg overflow-hidden max-h-[55vh] overflow-y-auto">
+        {models.length === 0 ? (
           <p className="p-6 text-center text-muted-foreground text-sm">No matching products found (factory delayed products excluded)</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 sticky top-0">
-              <tr className="text-xs text-muted-foreground">
-                <th className="w-10 px-3 py-2"></th>
-                <th className="text-left px-3 py-2 font-medium">Model</th>
-                <th className="text-left px-3 py-2 font-medium">Type</th>
-                <th className="text-left px-3 py-2 font-medium">Colour</th>
-                <th className="text-left px-3 py-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p: any) => {
-                const isSelected = selected.has(p.id);
-                const alreadyInSession = state.selectedProductIds.includes(p.id);
-                return (
-                  <tr
-                    key={p.id}
-                    className={cn(
-                      "border-t cursor-pointer transition-colors",
-                      alreadyInSession ? "opacity-40" : isSelected ? "bg-primary/5" : "hover:bg-secondary/50"
-                    )}
-                    onClick={() => !alreadyInSession && onToggle(p.id)}
-                  >
-                    <td className="px-3 py-2 text-center">
-                      <Checkbox
-                        checked={isSelected}
-                        disabled={alreadyInSession}
-                        onCheckedChange={() => onToggle(p.id)}
-                      />
-                    </td>
-                    <td className="px-3 py-2 font-medium">{p.shortname}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{p.productType}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{p.colour || "–"}</td>
-                    <td className="px-3 py-2">
-                      <span className="text-xs text-muted-foreground">{p.uploadStatus?.replace(/_/g, " ")}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="divide-y">
+            {models.map(([modelName, count]) => {
+              const modelProducts = productsByModel.get(modelName) || [];
+              const availableProducts = modelProducts.filter(p => !state.selectedProductIds.includes(p.id));
+              const selectedInModel = availableProducts.filter(p => selected.has(p.id)).length;
+              const isExpanded = expandedModels.has(modelName);
+              const allModelSelected = availableProducts.length > 0 && selectedInModel === availableProducts.length;
+
+              return (
+                <div key={modelName}>
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <Checkbox
+                      checked={allModelSelected}
+                      onCheckedChange={() => onToggleModel(modelName)}
+                      disabled={availableProducts.length === 0}
+                    />
+                    <button
+                      onClick={() => toggleExpand(modelName)}
+                      className="flex-1 flex items-center gap-2 text-left"
+                    >
+                      {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                      <span className="font-medium text-sm">{modelName}</span>
+                      <span className="text-xs text-muted-foreground">({availableProducts.length} items)</span>
+                      {selectedInModel > 0 && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{selectedInModel} selected</Badge>
+                      )}
+                    </button>
+                  </div>
+                  {isExpanded && (
+                    <div className="bg-background">
+                      {modelProducts.map(p => {
+                        const isSelected = selected.has(p.id);
+                        const alreadyInSession = state.selectedProductIds.includes(p.id);
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => !alreadyInSession && onToggle(p.id)}
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2 pl-12 border-t cursor-pointer transition-colors text-sm",
+                              alreadyInSession ? "opacity-40 cursor-default" : isSelected ? "bg-primary/5" : "hover:bg-secondary/50"
+                            )}
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              disabled={alreadyInSession}
+                              onCheckedChange={() => !alreadyInSession && onToggle(p.id)}
+                            />
+                            <span className="text-muted-foreground flex-1">{p.productType}</span>
+                            <span className="text-muted-foreground">{p.colour || "–"}</span>
+                            <span className="text-xs text-muted-foreground font-mono">{p.keyCode || ""}</span>
+                            {alreadyInSession && <Badge variant="outline" className="text-[10px]">In session</Badge>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
       <Button
         className="w-full"
         size="lg"
-        onClick={onStart}
+        onClick={onNext}
         disabled={selected.size === 0 || loading}
+      >
+        <ArrowRight className="w-4 h-4 mr-2" />
+        Review Selection ({selected.size} products)
+      </Button>
+    </div>
+  );
+}
+
+function StepConfirm({ state, allProducts, selected, available, onToggle, onConfirm, onBack, loading }: {
+  state: ShootingState;
+  allProducts: any[];
+  selected: Set<number>;
+  available: Set<number>;
+  onToggle: (id: number) => void;
+  onConfirm: () => void;
+  onBack: () => void;
+  loading: boolean;
+}) {
+  const selectedProducts = allProducts.filter(p => selected.has(p.id));
+  const unavailableCount = selected.size - available.size;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold">Confirm Availability</h1>
+            <p className="text-sm text-muted-foreground font-mono">{state.sessionName}</p>
+          </div>
+        </div>
+        <Badge variant="outline">{available.size}/{selected.size} available</Badge>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        <span>Uncheck any products that are not available. They will be marked as "Delayed at Factory" and removed from the session.</span>
+      </div>
+
+      <div className="border rounded-lg overflow-hidden max-h-[50vh] overflow-y-auto">
+        <div className="divide-y">
+          {selectedProducts.map(p => {
+            const isAvailable = available.has(p.id);
+            return (
+              <div
+                key={p.id}
+                onClick={() => onToggle(p.id)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors",
+                  !isAvailable ? "bg-red-50/50" : "hover:bg-secondary/50"
+                )}
+              >
+                <Checkbox
+                  checked={isAvailable}
+                  onCheckedChange={() => onToggle(p.id)}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("font-medium text-sm", !isAvailable && "line-through text-muted-foreground")}>{p.shortname}</span>
+                    <span className="text-xs text-muted-foreground">{p.productType}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {p.colour && <span>{p.colour}</span>}
+                    {p.keyCode && <span className="font-mono">{p.keyCode}</span>}
+                  </div>
+                </div>
+                {!isAvailable && (
+                  <Badge variant="destructive" className="text-[10px]">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Will mark delayed
+                  </Badge>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {unavailableCount > 0 && (
+        <p className="text-xs text-destructive text-center">
+          {unavailableCount} product{unavailableCount !== 1 ? "s" : ""} will be marked as factory delayed
+        </p>
+      )}
+
+      <Button
+        className="w-full"
+        size="lg"
+        onClick={onConfirm}
+        disabled={available.size === 0 || loading}
       >
         {loading ? (
           <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Setting up...</>
         ) : (
-          <><Camera className="w-4 h-4 mr-2" /> Start Shooting ({selected.size} products)</>
+          <><Camera className="w-4 h-4 mr-2" /> Confirm & Start Shooting ({available.size} products)</>
         )}
       </Button>
     </div>
   );
 }
 
-function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, allChecked }: {
+function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, onClose, allChecked, closingLoading }: {
   state: ShootingState;
   products: any[];
   onCheck: (id: number) => void;
   onUncheck: (id: number) => void;
   onCopy: () => void;
   onEnd: () => void;
+  onAddMore: () => void;
+  onClose: () => void;
   allChecked: boolean;
+  closingLoading: boolean;
 }) {
-  const sessionProducts = products.filter(p => state.selectedProductIds.includes(p.id));
-  const checked = state.checkedProductIds.size;
+  const sessionProducts = React.useMemo(
+    () => products.filter(p => state.selectedProductIds.includes(p.id)),
+    [products, state.selectedProductIds]
+  );
+  const checkedCount = state.checkedProductIds.size;
   const total = state.selectedProductIds.length;
-  const progress = total > 0 ? (checked / total) * 100 : 0;
+  const progress = total > 0 ? (checkedCount / total) * 100 : 0;
 
   return (
     <div className="space-y-4">
@@ -595,14 +800,20 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, allChecked 
             </div>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={onEnd}>
-          End Session
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={onAddMore}>
+            <Plus className="w-4 h-4 mr-1" />
+            Add More
+          </Button>
+          <Button variant="outline" size="sm" onClick={onEnd}>
+            End Session
+          </Button>
+        </div>
       </div>
 
       <div className="bg-card border rounded-lg p-4 space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-medium">{checked}/{total} shot</span>
+          <span className="font-medium">{checkedCount}/{total} shot</span>
           <span className="text-muted-foreground">{Math.round(progress)}%</span>
         </div>
         <div className="w-full h-3 rounded-full overflow-hidden bg-gray-100">
@@ -614,12 +825,19 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, allChecked 
       </div>
 
       {allChecked && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center text-green-800 space-y-2">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center text-green-800 space-y-3">
           <CheckCircle2 className="w-8 h-8 mx-auto" />
           <p className="font-medium">All products shot!</p>
-          <Button onClick={onEnd} size="sm">
-            Complete Session
-          </Button>
+          <div className="flex items-center justify-center gap-2">
+            <Button variant="outline" size="sm" onClick={onAddMore}>
+              <Plus className="w-4 h-4 mr-1" />
+              Add More Products
+            </Button>
+            <Button size="sm" onClick={onClose} disabled={closingLoading}>
+              {closingLoading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+              Close Session
+            </Button>
+          </div>
         </div>
       )}
 
@@ -627,11 +845,14 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, allChecked 
         {sessionProducts.map(p => {
           const isChecked = state.checkedProductIds.has(p.id);
           return (
-            <button
+            <div
               key={p.id}
+              role="button"
+              tabIndex={0}
               onClick={() => isChecked ? onUncheck(p.id) : onCheck(p.id)}
+              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); isChecked ? onUncheck(p.id) : onCheck(p.id); } }}
               className={cn(
-                "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left",
+                "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left cursor-pointer select-none",
                 isChecked
                   ? "bg-green-50 border-green-200"
                   : "bg-card border-border hover:border-primary/50"
@@ -657,7 +878,7 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, allChecked 
               <Badge variant="outline" className={cn("text-[10px] shrink-0", isChecked ? "bg-green-100 text-green-800" : "bg-cyan-100 text-cyan-800")}>
                 {isChecked ? "Ready for Selection" : "In the Studio"}
               </Badge>
-            </button>
+            </div>
           );
         })}
       </div>
