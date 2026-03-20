@@ -301,14 +301,20 @@ export default function ShootingMode() {
   }, [allProducts, state.sessionName]);
 
   const handleCloseSession = async () => {
+    const shotIds = state.selectedProductIds.filter(id => productHasAnyShot(id));
     const uncheckedIds = state.selectedProductIds.filter(id => !productHasAnyShot(id));
+
+    if (shotIds.length > 0) {
+      await bulkUpdateMut.mutateAsync({ productIds: shotIds, uploadStatus: "ready_for_selection" });
+      toast({ title: `${shotIds.length} product${shotIds.length !== 1 ? "s" : ""} moved to "Ready for Selection"` });
+    }
 
     if (uncheckedIds.length > 0) {
       for (const id of uncheckedIds) {
         const prevStatus = state.previousStatuses.get(id) || "not_started";
         await bulkUpdateMut.mutateAsync({ productIds: [id], uploadStatus: prevStatus });
       }
-      toast({ title: `${uncheckedIds.length} products without shots reverted to previous status` });
+      toast({ title: `${uncheckedIds.length} product${uncheckedIds.length !== 1 ? "s" : ""} without shots reverted to previous status` });
     }
 
     setState({
