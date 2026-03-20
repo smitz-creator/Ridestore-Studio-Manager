@@ -11,12 +11,14 @@ import {
   Menu,
   X,
   LogOut,
+  MousePointerClick,
 } from "lucide-react";
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
+  visibleTo?: string[];
 }
 
 const navItems: NavItem[] = [
@@ -24,6 +26,7 @@ const navItems: NavItem[] = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/capture-sessions", label: "Capture Sessions", icon: Camera },
   { href: "/sessions", label: "Photo Shoots", icon: Calendar },
+  { href: "/selection", label: "Selection", icon: MousePointerClick, visibleTo: ["Philip"] },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -47,7 +50,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </button>
           <span className="font-semibold text-lg tracking-tight">Ridestore Studio</span>
           <nav className="hidden sm:flex items-center gap-1 ml-6">
-            {navItems.map((item) => {
+            {navItems.filter(item => !item.visibleTo || item.visibleTo.includes(user?.name ?? "")).map((item) => {
               const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
               return (
                 <Link
@@ -93,7 +96,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {isMobileMenuOpen && (
         <div className="sm:hidden border-b bg-card px-4 py-2 space-y-1">
-          {navItems.map((item) => {
+          {navItems.filter(item => !item.visibleTo || item.visibleTo.includes(user?.name ?? "")).map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
             return (
               <Link

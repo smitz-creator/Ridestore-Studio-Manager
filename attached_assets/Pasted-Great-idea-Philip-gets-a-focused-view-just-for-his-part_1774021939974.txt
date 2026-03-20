@@ -1,0 +1,41 @@
+Great idea — Philip gets a focused view just for his part of the pipeline. Here's the prompt for Replit:
+
+---
+
+**Feature: Selection Mode — dedicated view for Philip**
+
+Add a new section/page called **"Selection"** that is only visible to the user **Philip** (based on the login name). This is where Philip reviews shot sessions and selects/crops images.
+
+**Navigation:**
+1. Add a "Selection" item in the top navigation bar, but **only show it when the logged-in user is Philip**. Other users should not see this nav item.
+
+**Selection page layout:**
+
+2. **Show only sessions/products at status "Ready for Selection".** No other statuses should appear here.
+
+3. **Group products by their session name** (Gallery Shots field). Each session appears as a collapsible card/section showing:
+   - Session name as the header (e.g., "DOPESNOW_WOMEN_JACKET_FW26_20.03")
+   - Number of products in that session (e.g., "21 products")
+   - A progress indicator showing how many have been ticked off (e.g., "0/21 selected")
+
+4. **Inside each session group**, list all the products with:
+   - Key Code (SKU) prominently displayed
+   - Color
+   - Model name + product type (smaller)
+   - A checkbox/tick button to mark that product's selection as done
+
+5. **"Complete Session" button** at the top of each session group — when clicked, it ticks off ALL products in that session at once (select all). This is for when Philip finishes an entire session in one go.
+
+6. **Individual tick-off** — Philip can also tick off products one by one within a session if he only finishes some.
+
+7. **When a product is ticked off** (individually or via Complete Session), its Upload Status should change to **"Ready for Retouch"**.
+
+8. **Progress tracking** — show an overall progress bar at the top of the Selection page: "X/Y products selected" across all sessions currently in "Ready for Selection" status.
+
+9. **Session disappears when complete** — once all products in a session are ticked off (all moved to "Ready for Retouch"), that session group should disappear from the Selection view since there's nothing left to select.
+
+10. **Keep it simple and clean** — Philip doesn't need filters, bulk status changes, or any of the other management tools. Just sessions to work through and checkboxes to tick.
+
+---
+
+This gives Philip a clean, distraction-free workspace for his part of the pipeline. Paste that in and let me know how it looks — we can always open it up to other users later if needed.
