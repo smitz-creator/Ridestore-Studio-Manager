@@ -811,9 +811,22 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
     () => products.filter(p => state.selectedProductIds.includes(p.id)),
     [products, state.selectedProductIds]
   );
+  const { toast } = useToast();
   const checkedCount = state.checkedProductIds.size;
   const total = state.selectedProductIds.length;
   const progress = total > 0 ? (checkedCount / total) * 100 : 0;
+
+  const keyCodes = sessionProducts.map((p: any) => p.keyCode).filter(Boolean);
+
+  const copyForGallery = () => {
+    navigator.clipboard.writeText(keyCodes.join("\n"));
+    toast({ title: `Copied ${keyCodes.length} Key Codes for Gallery` });
+  };
+
+  const copyForDetails = () => {
+    navigator.clipboard.writeText(keyCodes.map((k: string) => `${k}_DETAILS`).join("\n"));
+    toast({ title: `Copied ${keyCodes.length} Key Codes for Details` });
+  };
 
   return (
     <div className="space-y-4">
@@ -852,6 +865,17 @@ function Step3({ state, products, onCheck, onUncheck, onCopy, onEnd, onAddMore, 
             style={{ width: `${progress}%`, backgroundColor: "#22c55e" }}
           />
         </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" className="flex-1" onClick={copyForGallery} disabled={keyCodes.length === 0}>
+          <Copy className="w-4 h-4 mr-1.5" />
+          Copy all for Gallery
+        </Button>
+        <Button variant="outline" size="sm" className="flex-1" onClick={copyForDetails} disabled={keyCodes.length === 0}>
+          <Copy className="w-4 h-4 mr-1.5" />
+          Copy all for Details
+        </Button>
       </div>
 
       {allChecked && (
