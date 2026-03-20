@@ -5,7 +5,7 @@ import { db, productsTable } from "@workspace/db";
 const router: IRouter = Router();
 
 router.get("/products", async (req, res): Promise<void> => {
-  const { projectId, gender, productType, shortname, deliveryStatus, uploadStatus, delayed, shotMissing, search } = req.query;
+  const { projectId, gender, productType, shortname, deliveryStatus, uploadStatus, delayed, reshoot, shotMissing, search } = req.query;
 
   const conditions: any[] = [];
 
@@ -16,6 +16,7 @@ router.get("/products", async (req, res): Promise<void> => {
   if (deliveryStatus) conditions.push(eq(productsTable.deliveryStatus, deliveryStatus as string));
   if (uploadStatus) conditions.push(eq(productsTable.uploadStatus, uploadStatus as string));
   if (delayed === "true") conditions.push(eq(productsTable.factoryDelayed, true));
+  if (reshoot === "true") conditions.push(eq(productsTable.isReshoot, true));
 
   if (shotMissing === "gallery") conditions.push(or(isNull(productsTable.galleryShots), eq(productsTable.galleryShots, "")));
   if (shotMissing === "details") conditions.push(or(isNull(productsTable.detailsShots), eq(productsTable.detailsShots, "")));

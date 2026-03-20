@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Search, Filter, X, MessageSquare, AlertTriangle,
-  ChevronDown, ChevronUp, ArrowLeft, Trash2, Upload
+  ChevronDown, ChevronUp, ArrowLeft, Trash2, Upload, RotateCcw
 } from "lucide-react";
 
 const GENDERS = ["Men", "Women", "Unisex"];
@@ -86,6 +86,7 @@ export default function ProjectDetail() {
     if (filters.deliveryStatus) p.deliveryStatus = filters.deliveryStatus;
     if (filters.uploadStatus) p.uploadStatus = filters.uploadStatus;
     if (filters.delayed) p.delayed = "true";
+    if (filters.reshoot) p.reshoot = "true";
     if (filters.shotMissing) p.shotMissing = filters.shotMissing;
     if (searchText.trim()) p.search = searchText.trim();
     return p;
@@ -226,6 +227,11 @@ export default function ProjectDetail() {
     const selectedProducts = products?.filter((p: any) => selectedIds.has(p.id)) || [];
     const anyNotDelayed = selectedProducts.some((p: any) => !p.factoryDelayed);
     bulkMut.mutate({ productIds: ids, updates: { factoryDelayed: anyNotDelayed } });
+  };
+
+  const handleBulkRemoveReshoot = () => {
+    const ids = [...selectedIds];
+    bulkMut.mutate({ productIds: ids, updates: { isReshoot: false } });
   };
 
   if (!project) {
@@ -418,13 +424,20 @@ export default function ProjectDetail() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end pb-1">
+              <div className="flex items-end pb-1 gap-4">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <Checkbox
                     checked={!!filters.delayed}
                     onCheckedChange={(c) => setFilters(f => ({ ...f, delayed: c ? "true" : "" }))}
                   />
                   Delayed only
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={!!filters.reshoot}
+                    onCheckedChange={(c) => setFilters(f => ({ ...f, reshoot: c ? "true" : "" }))}
+                  />
+                  Reshoot only
                 </label>
               </div>
             </div>
@@ -496,6 +509,16 @@ export default function ProjectDetail() {
               >
                 <AlertTriangle className="w-3.5 h-3.5 mr-1" />
                 Toggle Factory Delayed
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkRemoveReshoot}
+                disabled={bulkMut.isPending}
+                className="text-xs h-8"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                Remove Reshoot
               </Button>
             </div>
             <Button
@@ -693,7 +716,7 @@ function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect 
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end pb-1 gap-4">
+            <div className="flex items-end pb-1 gap-4 flex-wrap">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox
                   checked={product.factoryDelayed}
@@ -701,6 +724,17 @@ function ProductRow({ product, expanded, onToggle, userId, isSelected, onSelect 
                 />
                 Factory Delayed
               </label>
+              {product.isReshoot && (
+                <button
+                  onClick={() => updateMut.mutate({ isReshoot: false })}
+                  className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 hover:bg-orange-200 transition-colors"
+                  title="Remove reshoot tag"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Reshoot
+                  <X className="w-3 h-3" />
+                </button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
