@@ -806,10 +806,10 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
     return val.split(",").map((s: string) => s.trim()).filter(Boolean).includes(sessionName);
   };
 
-  const gCount = sessionProducts.filter((p: any) => hasShot(p, "galleryShots")).length;
-  const dCount = sessionProducts.filter((p: any) => hasShot(p, "detailsShots")).length;
-  const mCount = sessionProducts.filter((p: any) => hasShot(p, "miscShots")).length;
-  const coCount = sessionProducts.filter((p: any) => p.isCarryOver).length;
+  const isComplete = (p: any) =>
+    (hasShot(p, "galleryShots") && hasShot(p, "detailsShots")) || p.isCarryOver;
+  const completeCount = sessionProducts.filter(isComplete).length;
+  const progress = total > 0 ? (completeCount / total) * 100 : 0;
 
   const toggleShot = (product: any, field: string) => {
     const current = product[field] || "";
@@ -839,9 +839,7 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
     toast({ title: `Copied ${keyCodes.length} Key Codes for Details` });
   };
 
-  const allHaveAtLeastOne = sessionProducts.every((p: any) =>
-    hasShot(p, "galleryShots") || hasShot(p, "detailsShots") || hasShot(p, "miscShots") || p.isCarryOver
-  );
+  const allComplete = total > 0 && sessionProducts.every(isComplete);
 
   return (
     <div className="space-y-4">
@@ -870,22 +868,15 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
       </div>
 
       <div className="bg-card border rounded-lg p-4 space-y-2">
-        <div className="flex items-center gap-4 text-sm font-medium flex-wrap">
-          <span className="text-green-700">G: {gCount}/{total}</span>
-          <span className="text-green-700">D: {dCount}/{total}</span>
-          <span className="text-green-700">M: {mCount}/{total}</span>
-          <span className="text-blue-700">CO: {coCount}/{total}</span>
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-medium">{completeCount}/{total} complete</span>
+          <span className="text-muted-foreground">{Math.round(progress)}%</span>
         </div>
-        <div className="flex items-center gap-1 h-3">
-          <div className="flex-1 h-full rounded-full overflow-hidden bg-gray-100" title={`Gallery: ${gCount}/${total}`}>
-            <div className="h-full rounded-full transition-all duration-300 bg-green-500" style={{ width: `${total > 0 ? (gCount / total) * 100 : 0}%` }} />
-          </div>
-          <div className="flex-1 h-full rounded-full overflow-hidden bg-gray-100" title={`Details: ${dCount}/${total}`}>
-            <div className="h-full rounded-full transition-all duration-300 bg-emerald-500" style={{ width: `${total > 0 ? (dCount / total) * 100 : 0}%` }} />
-          </div>
-          <div className="flex-1 h-full rounded-full overflow-hidden bg-gray-100" title={`Misc: ${mCount}/${total}`}>
-            <div className="h-full rounded-full transition-all duration-300 bg-teal-500" style={{ width: `${total > 0 ? (mCount / total) * 100 : 0}%` }} />
-          </div>
+        <div className="w-full h-3 rounded-full overflow-hidden bg-gray-100">
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${progress}%`, backgroundColor: "#22c55e" }}
+          />
         </div>
       </div>
 
@@ -900,10 +891,10 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
         </Button>
       </div>
 
-      {allHaveAtLeastOne && (
+      {allComplete && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center text-green-800 space-y-3">
           <CheckCircle2 className="w-8 h-8 mx-auto" />
-          <p className="font-medium">All products have at least one shot type!</p>
+          <p className="font-medium">All products complete!</p>
           <div className="flex items-center justify-center gap-2">
             <Button variant="outline" size="sm" onClick={onAddMore}>
               <Plus className="w-4 h-4 mr-1" />
