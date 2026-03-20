@@ -13,6 +13,7 @@ import {
   LogOut,
   MousePointerClick,
   Paintbrush,
+  FileText,
 } from "lucide-react";
 
 interface NavItem {
@@ -110,6 +111,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="hidden sm:inline">Retouch</span>
             </Link>
           )}
+          {(user?.name === "Oskar" || user?.name === "Agnes") && (
+            <Link
+              href="/naming"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                location === "/naming"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+              )}
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Naming</span>
+            </Link>
+          )}
           <span className="text-sm font-medium">{user?.name}</span>
           <button
             onClick={logout}
@@ -167,6 +182,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               <Paintbrush className="w-4 h-4" />
               Retouch
+            </Link>
+          )}
+          {(user?.name === "Oskar" || user?.name === "Agnes") && (
+            <Link
+              href="/naming"
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                location === "/naming"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              <FileText className="w-4 h-4" />
+              Naming
             </Link>
           )}
         </div>
