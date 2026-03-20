@@ -117,8 +117,39 @@ router.patch("/products/bulk-update", async (req, res): Promise<void> => {
   if ("isReshoot" in updates) {
     setData.isReshoot = !!updates.isReshoot;
   }
+  const shotFields = ["galleryShots", "detailsShots", "miscShots"] as const;
+  for (const f of shotFields) {
+    if (f in updates) {
+      const val = updates[f];
+      setData[f] = (typeof val === "string" ? val : "") ;
+    }
+  }
   if (Object.keys(setData).length === 0) {
     res.status(400).json({ error: "No valid fields to update" });
+    return;
+  }
+
+  const clearingShotField = shotFields.some(f => f in setData && !setData[f]?.trim());
+
+  if (clearingShotField) {
+    const products = await db.select().from(productsTable).where(inArray(productsTable.id, productIds));
+    await db.update(productsTable).set(setData).where(inArray(productsTable.id, productIds));
+
+    const revertIds: number[] = [];
+    const revertProducts: { id: number; shortname: string; keyCode: string | null; reason: string }[] = [];
+    for (const p of products) {
+      if (!UPLOAD_AT_OR_BEYOND_READY.includes(p.uploadStatus)) continue;
+      const simulated = { ...p, ...setData };
+      const missing = isMissingRequired(simulated);
+      if (missing) {
+        revertIds.push(p.id);
+        revertProducts.push({ id: p.id, shortname: p.shortname, keyCode: p.keyCode, reason: missing });
+      }
+    }
+    if (revertIds.length > 0) {
+      await db.update(productsTable).set({ uploadStatus: "not_started" }).where(inArray(productsTable.id, revertIds));
+    }
+    res.json({ updated: productIds.length, reverted: revertIds.length, revertedProducts: revertProducts });
     return;
   }
 

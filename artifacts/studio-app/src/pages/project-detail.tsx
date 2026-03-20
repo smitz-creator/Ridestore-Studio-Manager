@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Search, Filter, X, MessageSquare, AlertTriangle,
-  ChevronDown, ChevronUp, ArrowLeft, Trash2, Upload, RotateCcw
+  ChevronDown, ChevronUp, ArrowLeft, Trash2, Upload, RotateCcw, Eraser
 } from "lucide-react";
 
 const GENDERS = ["Men", "Women", "Unisex"];
@@ -249,6 +249,20 @@ export default function ProjectDetail() {
   const handleBulkRemoveReshoot = () => {
     const ids = [...selectedIds];
     bulkMut.mutate({ productIds: ids, updates: { isReshoot: false } });
+  };
+
+  const CLEAR_SHOT_OPTIONS = [
+    { value: "galleryShots", label: "Gallery Shots" },
+    { value: "detailsShots", label: "Details Shots" },
+    { value: "miscShots", label: "Misc Shots" },
+  ];
+
+  const handleBulkClearShots = (field: string) => {
+    const label = CLEAR_SHOT_OPTIONS.find(o => o.value === field)?.label || field;
+    const count = selectedIds.size;
+    if (!confirm(`Clear ${label} for ${count} selected product${count !== 1 ? "s" : ""}? This cannot be undone.`)) return;
+    const ids = [...selectedIds];
+    bulkMut.mutate({ productIds: ids, updates: { [field]: "" } });
   };
 
   if (!project) {
@@ -538,6 +552,20 @@ export default function ProjectDetail() {
                 <RotateCcw className="w-3.5 h-3.5 mr-1" />
                 Remove Reshoot
               </Button>
+              <Select onValueChange={handleBulkClearShots} disabled={bulkMut.isPending}>
+                <SelectTrigger className="w-[160px] h-8 text-xs">
+                  <SelectValue placeholder="Clear Shots..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLEAR_SHOT_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={o.value}>
+                      <span className="flex items-center gap-1">
+                        <Eraser className="w-3 h-3" /> Clear {o.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <Button
               variant="ghost"
