@@ -180,6 +180,7 @@ export default function Upload() {
             <CheckCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p className="text-lg font-medium">All caught up!</p>
             <p className="text-sm">No products waiting for upload.</p>
+            <p className="text-xs text-muted-foreground/60 mt-4">🔧 Automated upload via Commerce Tools — under construction</p>
           </div>
         )}
 
