@@ -1104,7 +1104,15 @@ function SuggestionCard({ session, onUse }: { session: any; onUse: () => void })
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Products</span>
-              <span className="text-xs font-medium text-emerald-400">{products.length} products</span>
+              <div className="flex items-center gap-1.5 text-xs font-medium">
+                {products.filter((p: any) => p.isCarryOver).length > 0 && (
+                  <><span className="text-blue-400">{products.filter((p: any) => p.isCarryOver).length} carry overs</span><span className="text-muted-foreground">·</span></>
+                )}
+                {products.filter((p: any) => p.factoryDelayed).length > 0 && (
+                  <><span className="text-orange-400">{products.filter((p: any) => p.factoryDelayed).length} delayed</span><span className="text-muted-foreground">·</span></>
+                )}
+                <span className="text-emerald-400">{products.length} products</span>
+              </div>
             </div>
             <div className="max-h-32 overflow-y-auto border rounded-md p-2 bg-background space-y-1">
               {products.map((p: any) => (
