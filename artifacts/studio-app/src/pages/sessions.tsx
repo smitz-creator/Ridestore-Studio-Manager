@@ -568,6 +568,16 @@ export default function Sessions() {
 
   const [open, setOpen] = React.useState(false);
   const [editingSession, setEditingSession] = React.useState<any>(null);
+  const [productTypeFilter, setProductTypeFilter] = React.useState<string>("all");
+
+  const allProductTypes = React.useMemo(() => {
+    if (!sessions) return [];
+    const types = new Set<string>();
+    for (const s of sessions as any[]) {
+      for (const t of (s.productTypes || [])) types.add(t);
+    }
+    return [...types].sort();
+  }, [sessions]);
 
   const openEdit = (session: any) => {
     setEditingSession(session);
@@ -590,15 +600,30 @@ export default function Sessions() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const upcoming = sessions?.filter((s: any) => new Date(s.date) >= today) || [];
-  const past = sessions?.filter((s: any) => new Date(s.date) < today) || [];
+  const filtered = sessions?.filter((s: any) =>
+    productTypeFilter === "all" || (s.productTypes || []).includes(productTypeFilter)
+  ) || [];
+  const upcoming = filtered.filter((s: any) => new Date(s.date) >= today);
+  const past = filtered.filter((s: any) => new Date(s.date) < today);
 
   return (
     <Layout>
       <div className="space-y-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Studio Photo Shoots</h1>
-          <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" /> Book a Photo Shoot</Button>
+          <div className="flex items-center gap-2">
+            <select
+              value={productTypeFilter}
+              onChange={e => setProductTypeFilter(e.target.value)}
+              className="h-8 rounded-md border bg-background px-2 text-sm"
+            >
+              <option value="all">All Types</option>
+              {allProductTypes.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" /> Book a Photo Shoot</Button>
+          </div>
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingSession(null); }}>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader><DialogTitle>{editingSession ? "Edit Photo Shoot" : "Book a Photo Shoot"}</DialogTitle></DialogHeader>

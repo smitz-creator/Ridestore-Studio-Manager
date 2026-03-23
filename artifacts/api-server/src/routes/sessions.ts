@@ -21,13 +21,21 @@ router.get("/sessions", async (_req, res): Promise<void> => {
     .leftJoin(usersTable, eq(studioSessionsTable.createdById, usersTable.id))
     .orderBy(desc(studioSessionsTable.date));
 
-  const allLinks = await db.select({ sessionId: sessionProductsTable.sessionId, productId: sessionProductsTable.productId }).from(sessionProductsTable);
+  const allLinks = await db
+    .select({ sessionId: sessionProductsTable.sessionId, productId: sessionProductsTable.productId, productType: productsTable.productType })
+    .from(sessionProductsTable)
+    .leftJoin(productsTable, eq(sessionProductsTable.productId, productsTable.id));
   const countMap = new Map<number, number>();
+  const typeMap = new Map<number, Set<string>>();
   for (const l of allLinks) {
     countMap.set(l.sessionId, (countMap.get(l.sessionId) || 0) + 1);
+    if (l.productType) {
+      if (!typeMap.has(l.sessionId)) typeMap.set(l.sessionId, new Set());
+      typeMap.get(l.sessionId)!.add(l.productType);
+    }
   }
 
-  const enriched = sessions.map(s => ({ ...s, productCount: countMap.get(s.id) || 0 }));
+  const enriched = sessions.map(s => ({ ...s, productCount: countMap.get(s.id) || 0, productTypes: [...(typeMap.get(s.id) || [])] }));
   res.json(enriched);
 });
 
