@@ -5,7 +5,7 @@ import { db, plannerBlocksTable } from "@workspace/db";
 const router: IRouter = Router();
 
 const VALID_ROWS = ["Photo", "Philip", "Smitz", "Oskar", "Agnes"];
-const VALID_CATEGORIES = ["gallery", "details", "mixed", "retouch", "deadline", "meeting", "other", "holiday"];
+const VALID_CATEGORIES = ["gallery", "details", "mixed", "retouch", "selection", "naming", "upload", "deadline", "meeting", "other", "holiday"];
 
 router.get("/planner/blocks", async (req, res): Promise<void> => {
   const year = parseInt(req.query.year as string) || 2026;

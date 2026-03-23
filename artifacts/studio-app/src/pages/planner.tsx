@@ -25,15 +25,26 @@ const ROWS = ["Photo", "Philip", "Smitz", "Oskar", "Agnes"] as const;
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const;
 
 const CATEGORIES: Record<string, { label: string; bg: string; text: string; border: string }> = {
-  gallery: { label: "Gallery", bg: "bg-green-900/40", text: "text-green-300", border: "border-green-700" },
-  details: { label: "Details", bg: "bg-blue-900/40", text: "text-blue-300", border: "border-blue-700" },
-  mixed: { label: "Mixed", bg: "bg-purple-900/40", text: "text-purple-300", border: "border-purple-700" },
   retouch: { label: "Retouch", bg: "bg-orange-900/40", text: "text-orange-300", border: "border-orange-700" },
+  selection: { label: "Selection", bg: "bg-pink-900/40", text: "text-pink-300", border: "border-pink-700" },
+  naming: { label: "Naming", bg: "bg-cyan-900/40", text: "text-cyan-300", border: "border-cyan-700" },
+  upload: { label: "Upload", bg: "bg-lime-900/40", text: "text-lime-300", border: "border-lime-700" },
   deadline: { label: "Deadline", bg: "bg-red-900/40", text: "text-red-300", border: "border-red-700" },
   meeting: { label: "Meeting", bg: "bg-zinc-700/60", text: "text-zinc-300", border: "border-zinc-600" },
   other: { label: "Other", bg: "bg-yellow-900/40", text: "text-yellow-300", border: "border-yellow-700" },
   holiday: { label: "Holiday", bg: "bg-zinc-800/80", text: "text-zinc-400 line-through", border: "border-zinc-700" },
+  gallery: { label: "Gallery", bg: "bg-green-900/40", text: "text-green-300", border: "border-green-700" },
+  details: { label: "Details", bg: "bg-blue-900/40", text: "text-blue-300", border: "border-blue-700" },
+  mixed: { label: "Mixed", bg: "bg-purple-900/40", text: "text-purple-300", border: "border-purple-700" },
 };
+
+const CATEGORY_ROWS: string[][] = [
+  ["retouch", "selection", "naming", "upload", "deadline"],
+  ["meeting", "other", "holiday"],
+  ["gallery", "details", "mixed"],
+];
+
+const AUTO_CATEGORIES = new Set(["gallery", "details", "mixed"]);
 
 function getWeekDates(weekNum: number, year: number): Date[] {
   const jan1 = new Date(year, 0, 1);
@@ -86,6 +97,42 @@ interface AddPopup {
 
 interface EditPopup {
   block: PlannerBlock;
+}
+
+function CategoryPicker({ selected, onSelect }: { selected: string; onSelect: (key: string) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs text-muted-foreground">Category</label>
+      <div className="space-y-1.5">
+        {CATEGORY_ROWS.map((rowKeys, ri) => (
+          <div key={ri} className="flex flex-wrap gap-1.5">
+            {ri === 2 && (
+              <span className="text-[10px] text-muted-foreground/60 w-full mb-0.5">Auto from shoots — manual override:</span>
+            )}
+            {rowKeys.map(key => {
+              const cat = CATEGORIES[key];
+              if (!cat) return null;
+              const isAuto = AUTO_CATEGORIES.has(key);
+              return (
+                <button
+                  key={key}
+                  onClick={() => onSelect(key)}
+                  className={cn(
+                    "rounded border transition-colors",
+                    isAuto ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]",
+                    cat.bg, cat.text, cat.border,
+                    selected === key ? "ring-2 ring-white/30" : isAuto ? "opacity-40 hover:opacity-70" : "opacity-60 hover:opacity-100"
+                  )}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function Planner() {
@@ -397,24 +444,7 @@ export default function Planner() {
               autoFocus
               onKeyDown={e => e.key === "Enter" && handleAdd()}
             />
-            <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">Category</label>
-              <div className="flex flex-wrap gap-1.5">
-                {Object.entries(CATEGORIES).map(([key, cat]) => (
-                  <button
-                    key={key}
-                    onClick={() => setAddCategory(key)}
-                    className={cn(
-                      "px-2 py-1 rounded text-[11px] border transition-colors",
-                      cat.bg, cat.text, cat.border,
-                      addCategory === key ? "ring-2 ring-white/30" : "opacity-60 hover:opacity-100"
-                    )}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <CategoryPicker selected={addCategory} onSelect={setAddCategory} />
             <label className="flex items-center gap-2 text-xs cursor-pointer">
               <input
                 type="checkbox"
@@ -451,24 +481,7 @@ export default function Planner() {
               autoFocus
               onKeyDown={e => e.key === "Enter" && handleEdit()}
             />
-            <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">Category</label>
-              <div className="flex flex-wrap gap-1.5">
-                {Object.entries(CATEGORIES).map(([key, cat]) => (
-                  <button
-                    key={key}
-                    onClick={() => setEditCategory(key)}
-                    className={cn(
-                      "px-2 py-1 rounded text-[11px] border transition-colors",
-                      cat.bg, cat.text, cat.border,
-                      editCategory === key ? "ring-2 ring-white/30" : "opacity-60 hover:opacity-100"
-                    )}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <CategoryPicker selected={editCategory} onSelect={setEditCategory} />
             <div className="flex gap-2 justify-end">
               <Button variant="destructive" size="sm" onClick={handleDelete}>
                 <Trash2 className="w-3 h-3 mr-1" /> Delete
