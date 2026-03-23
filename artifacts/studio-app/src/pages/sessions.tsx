@@ -9,13 +9,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Calendar, Trash2, Pencil } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const BRANDS = ["Dope Snow", "Montec"];
-const SHOT_TYPES = ["Gallery", "Details", "Misc", "Mixed"];
+const SHOT_TYPES = ["Gallery", "Details", "Mixed", "Misc"];
+
+function ToggleChip({ label, selected, onClick, hint }: { label: string; selected: boolean; onClick: () => void; hint?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={hint}
+      className={cn(
+        "px-3 py-1.5 rounded-md text-xs font-medium border transition-all",
+        selected
+          ? "bg-emerald-600 border-emerald-600 text-white"
+          : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function parseMulti(val: string | undefined | null): string[] {
+  if (!val) return [];
+  return val.split(",").map(s => s.trim()).filter(Boolean);
+}
+
+function toggleInArray(arr: string[], val: string): string[] {
+  return arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val];
+}
 
 export default function Sessions() {
   const qc = useQueryClient();
@@ -26,8 +53,10 @@ export default function Sessions() {
   const [open, setOpen] = React.useState(false);
   const [editingSession, setEditingSession] = React.useState<any>(null);
   const [form, setForm] = React.useState({
-    date: "", modelName: "", brand: BRANDS[0], shotType: SHOT_TYPES[0], notes: "",
+    date: "", modelName: "", brands: [] as string[], shotTypes: [] as string[], notes: "",
   });
+
+  const emptyForm = { date: "", modelName: "", brands: [] as string[], shotTypes: [] as string[], notes: "" };
 
   const createMut = useMutation({
     mutationFn: (data: any) => api.createSession(data),
@@ -36,7 +65,7 @@ export default function Sessions() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpen(false);
       setEditingSession(null);
-      setForm({ date: "", modelName: "", brand: BRANDS[0], shotType: SHOT_TYPES[0], notes: "" });
+      setForm(emptyForm);
       toast({ title: "Photo shoot booked" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -49,7 +78,7 @@ export default function Sessions() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpen(false);
       setEditingSession(null);
-      setForm({ date: "", modelName: "", brand: BRANDS[0], shotType: SHOT_TYPES[0], notes: "" });
+      setForm(emptyForm);
       toast({ title: "Photo shoot updated" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -60,8 +89,8 @@ export default function Sessions() {
     setForm({
       date: dateStr,
       modelName: session.modelName || "",
-      brand: session.brand || BRANDS[0],
-      shotType: session.shotType || SHOT_TYPES[0],
+      brands: parseMulti(session.brand),
+      shotTypes: parseMulti(session.shotType),
       notes: session.notes || "",
     });
     setEditingSession(session);
@@ -69,7 +98,7 @@ export default function Sessions() {
   };
 
   const openCreate = () => {
-    setForm({ date: "", modelName: "", brand: BRANDS[0], shotType: SHOT_TYPES[0], notes: "" });
+    setForm(emptyForm);
     setEditingSession(null);
     setOpen(true);
   };
@@ -83,20 +112,27 @@ export default function Sessions() {
     },
   });
 
+  const canSubmit = form.date && form.modelName.trim() && form.brands.length > 0 && form.shotTypes.length > 0;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.date) {
-      toast({ title: "Date is required", variant: "destructive" });
-      return;
-    }
-    if (!form.modelName.trim()) {
-      toast({ title: "Model Name is required", variant: "destructive" });
-      return;
-    }
+    if (!form.date) { toast({ title: "Date is required", variant: "destructive" }); return; }
+    if (!form.modelName.trim()) { toast({ title: "Model - Product is required", variant: "destructive" }); return; }
+    if (form.brands.length === 0) { toast({ title: "Select at least one brand", variant: "destructive" }); return; }
+    if (form.shotTypes.length === 0) { toast({ title: "Select at least one shot type", variant: "destructive" }); return; }
+
+    const payload = {
+      date: form.date,
+      modelName: form.modelName,
+      brand: form.brands.join(", "),
+      shotType: form.shotTypes.join(", "),
+      notes: form.notes,
+    };
+
     if (editingSession) {
-      updateMut.mutate({ id: editingSession.id, data: form });
+      updateMut.mutate({ id: editingSession.id, data: payload });
     } else {
-      createMut.mutate({ ...form, createdById: user?.id });
+      createMut.mutate({ ...payload, createdById: user?.id });
     }
   };
 
@@ -120,34 +156,43 @@ export default function Sessions() {
                   <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Model Name</Label>
+                  <Label>Model - Product</Label>
                   <Input value={form.modelName} onChange={e => setForm(f => ({ ...f, modelName: e.target.value }))} placeholder="e.g. Akin Jacket" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Brand</Label>
-                    <Select value={form.brand} onValueChange={v => setForm(f => ({ ...f, brand: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {BRANDS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex flex-wrap gap-2">
+                      {BRANDS.map(b => (
+                        <ToggleChip
+                          key={b}
+                          label={b}
+                          selected={form.brands.includes(b)}
+                          onClick={() => setForm(f => ({ ...f, brands: toggleInArray(f.brands, b) }))}
+                        />
+                      ))}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Shot Type</Label>
-                    <Select value={form.shotType} onValueChange={v => setForm(f => ({ ...f, shotType: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {SHOT_TYPES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex flex-wrap gap-2">
+                      {SHOT_TYPES.map(s => (
+                        <ToggleChip
+                          key={s}
+                          label={s}
+                          selected={form.shotTypes.includes(s)}
+                          onClick={() => setForm(f => ({ ...f, shotTypes: toggleInArray(f.shotTypes, s) }))}
+                          hint={s === "Mixed" ? "Gallery + Details in the same session" : undefined}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Notes</Label>
                   <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any notes..." />
                 </div>
-                <Button type="submit" className="w-full" disabled={createMut.isPending || updateMut.isPending}>
+                <Button type="submit" className="w-full" disabled={!canSubmit || createMut.isPending || updateMut.isPending}>
                   {editingSession
                     ? (updateMut.isPending ? "Saving..." : "Save Changes")
                     : (createMut.isPending ? "Booking..." : "Book Photo Shoot")}
@@ -197,6 +242,9 @@ export default function Sessions() {
 }
 
 function SessionCard({ session: s, onEdit, onDelete, past }: { session: any; onEdit: () => void; onDelete: () => void; past?: boolean }) {
+  const brandParts = parseMulti(s.brand);
+  const shotParts = parseMulti(s.shotType);
+
   return (
     <div className={`bg-card border rounded-lg p-4 ${past ? "opacity-60" : ""}`}>
       <div className="flex items-center justify-between">
@@ -207,9 +255,11 @@ function SessionCard({ session: s, onEdit, onDelete, past }: { session: any; onE
           </div>
           <div>
             <div className="font-medium text-sm">{s.modelName}</div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Badge variant="secondary" className="text-xs">{s.brand}</Badge>
-              <span className="text-xs text-muted-foreground">{s.shotType}</span>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {brandParts.map(b => (
+                <Badge key={b} variant="secondary" className="text-xs">{b}</Badge>
+              ))}
+              <span className="text-xs text-muted-foreground">{shotParts.join(", ")}</span>
               {s.createdByName && <span className="text-xs text-muted-foreground">&middot; by {s.createdByName}</span>}
             </div>
             {s.notes && <p className="text-xs text-muted-foreground mt-1">{s.notes}</p>}
