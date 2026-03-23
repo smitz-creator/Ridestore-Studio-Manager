@@ -55,17 +55,32 @@ export default function CaptureSessions() {
   });
 
   const [expandedSession, setExpandedSession] = React.useState<string | null>(null);
-  const [filterShotType, setFilterShotType] = React.useState<string>("all");
+  const [filterProductType, setFilterProductType] = React.useState<string>("all");
   const [searchText, setSearchText] = React.useState("");
+
+  const parseProductType = (name: string) => {
+    const parts = name.split("_");
+    return parts.length >= 3 ? parts[2] : "";
+  };
+
+  const allProductTypes = React.useMemo(() => {
+    if (!sessions) return [];
+    const types = new Set<string>();
+    for (const s of sessions as any[]) {
+      const pt = parseProductType(s.sessionName);
+      if (pt) types.add(pt);
+    }
+    return [...types].sort();
+  }, [sessions]);
 
   const filtered = React.useMemo(() => {
     if (!sessions) return [];
     return sessions.filter((s: any) => {
-      if (filterShotType !== "all" && !s.shotTypes.includes(filterShotType)) return false;
+      if (filterProductType !== "all" && parseProductType(s.sessionName) !== filterProductType) return false;
       if (searchText && !s.sessionName.toLowerCase().includes(searchText.toLowerCase())) return false;
       return true;
     });
-  }, [sessions, filterShotType, searchText]);
+  }, [sessions, filterProductType, searchText]);
 
   return (
     <Layout>
@@ -87,15 +102,15 @@ export default function CaptureSessions() {
             placeholder="Search sessions..."
             className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring flex-1 min-w-[200px]"
           />
-          <Select value={filterShotType} onValueChange={setFilterShotType}>
+          <Select value={filterProductType} onValueChange={setFilterProductType}>
             <SelectTrigger className="w-[140px] h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="Gallery">Gallery</SelectItem>
-              <SelectItem value="Details">Details</SelectItem>
-              <SelectItem value="Misc">Misc</SelectItem>
+              {allProductTypes.map(t => (
+                <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1).toLowerCase()}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
