@@ -396,10 +396,11 @@ export default function ShootingMode() {
   }, [state.brand, state.gender, state.productType]);
 
   const handleUseSuggestion = async (session: any) => {
-    const products = await api.getSessionProducts(session.id);
+    const rawProducts = await api.getSessionProducts(session.id);
+    const products = rawProducts.filter((p: any) => !p.factoryDelayed);
     const productIds = products.map((p: any) => p.id);
     if (productIds.length === 0) {
-      toast({ title: "No products linked to this shoot", variant: "destructive" });
+      toast({ title: "No available products — all are delayed at factory", variant: "destructive" });
       return;
     }
 
