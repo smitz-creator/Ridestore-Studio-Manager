@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 const BRANDS = [
-  { id: "DOPESNOW", label: "DOPE SNOW", brand: "Dope Snow" },
+  { id: "DOPE", label: "DOPE SNOW", brand: "Dope Snow" },
   { id: "MONTEC", label: "MONTEC", brand: "Montec" },
 ];
 
