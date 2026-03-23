@@ -1,0 +1,58 @@
+That IS a brilliant idea — turning the booking into a guided wizard that narrows down to exactly what you're shooting, and then you have the product list right there when you book. Here's the prompt:
+
+---
+
+**Feature: Guided product selection wizard in "Book a Photo Shoot" modal**
+
+Replace the current simple booking form with a step-by-step guided selection flow, similar to Shooting Mode. The modal becomes a wizard that narrows down products as you go.
+
+**Step 1: Shot Type**
+- Show the Shot Type toggles: Gallery, Details, Mixed, Misc
+- User ticks one or more
+- Once selected, the unchosen options fade out/hide, and Step 2 appears below
+
+**Step 2: Brand**
+- Show brand toggle pills: Dope Snow, Montec
+- User ticks one or both
+- Once selected, unchosen options hide, and Step 3 appears below
+
+**Step 3: Gender**
+- Show gender options as toggle pills (based on what's available in the selected brand): Men, Women
+- User ticks one or more
+- Once selected, unchosen options hide, and Step 4 appears below
+
+**Step 4: Product Type**
+- Show buttons for all available product types that exist within the selected brand + gender combination (e.g., if Dope Snow + Women is selected, only show product types that have products matching that filter)
+- User picks one or more product types
+- Once selected, unchosen options hide, and Step 5 appears below
+
+**Step 5: Products**
+- Show all products matching the selected Brand + Gender + Product Type filters
+- Display each product with: Key Code, Color, Model name, current status
+- User can tick individual products or "Select All"
+- These are the products that will be associated with this photo shoot booking
+
+**Step 6: Details**
+- Show the remaining fields:
+  - Date (pre-filled with today)
+  - Model - Product (text field, e.g., "Akin Jacket")
+  - Notes (text area)
+- "Book Photo Shoot" button to confirm
+
+**Behavior:**
+- Each step only appears after the previous one is completed
+- Selecting an option in any step immediately hides the unchosen alternatives, keeping the view clean and focused
+- User can click on a completed step to go back and change their selection (this resets all steps below it)
+- The wizard should feel smooth — no page reloads, just steps appearing as you make choices
+- The total product count should be visible: "23 products selected"
+
+**On booking:**
+- Save the photo shoot with all the metadata (date, model-product, notes, shot type, brand)
+- Associate the selected products with this photo shoot
+- This gives the team a clear overview of exactly what's planned for each shoot day
+
+**Important:** Keep the existing functionality working — this replaces the current simple form but the data model for photo shoots stays the same. The product association is the new addition.
+
+---
+
+This turns the booking from a vague note into a concrete shoot plan with actual products attached. Paste that in — it's a big one but it'll make shoot planning way more structured. Let me know how the first pass looks.

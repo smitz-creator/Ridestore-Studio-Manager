@@ -37,7 +37,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén, Agne
 - **Comments**: Any user can comment on a product, showing who and when
 - **Capture Sessions**: Auto-collected from Gallery/Details/Misc shot fields across all products. Groups products by session name and shot type. Shows parsed dates from session names. Expandable to show product table. "Change status for all" bulk updates.
 - **Excel Import**: Upload .xlsx files to bulk-import products. Multi-sheet support: previews all sheets, lets user pick which to import, auto-detects season from filename. Creates one project per selected sheet. Sheet names map to brands: DOPE→Dope Snow, MONTEC→Montec. Also supports per-project import.
-- **Studio Sessions ("Photo Shoots")**: Book sessions with date, model name, brand, shot type, notes.
+- **Studio Sessions ("Photo Shoots")**: Guided wizard booking flow — Step 1: Shot Type → Step 2: Brand → Step 3: Gender → Step 4: Product Type → Step 5: Products (filtered by previous selections, with Select All/Clear and individual checkboxes) → Step 6: Details (Date, Model-Product, Notes). Products are associated with sessions via `session_products` junction table. Edit modal pre-fills all wizard steps including pre-checked products. Product count shown on session cards.
 - **Shooting Mode**: Multi-step guided workflow for live studio shoot days. Step 1: Pick Brand → Gender → Product Type with big tappable buttons, auto-generates session name (format: BRAND_GENDER_TYPE_FWyy_DD.MM). Step 2: Select products (filtered by brand/gender/type, excludes factory-delayed, model filter). Step 3: Live tracking with G/D/M/CO toggle buttons per product card. Step 4: Session complete — closing session auto-moves ticked products to "Ready for Selection", reverts unticked products to previous status. Carry Over products auto-show CO ticked.
 - **Selection Mode** (Philip only): Dedicated view at `/selection` for reviewing shot sessions. Shows products at "Ready for Selection" grouped by Gallery Shots session name. Collapsible session cards with progress indicators. Individual tick-off or "Complete Session" bulk action moves products to "Ready for Retouch". Sessions disappear when all products are selected. Access-guarded: nav item hidden and page redirects non-Philip users.
 - **Naming Tracker** (Oskar & Agnes only): Dedicated view at `/naming` for file renaming and asset verification. Shows products at "Post Production Done" grouped by Gallery Shots session name. Same layout as Selection — collapsible session cards, individual tick-off or "Complete Session" bulk action moves products to "Ready for Upload". CO products auto-promoted. Yellow color scheme.
@@ -50,6 +50,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén, Agne
 - `products`: id, project_id (FK), gender, product_type, shortname, style, design, key_code, colour, gallery_shots, details_shots, misc_shots, delivery_status, factory_delayed, is_reshoot, is_carry_over, upload_status, created_at, updated_at
 - `comments`: id, product_id (FK), user_id (FK), text, created_at
 - `studio_sessions`: id, date, model_name, brand, shot_type, notes, created_by_id, created_at
+- `session_products`: id, session_id (FK→studio_sessions), product_id (FK→products), created_at. Unique constraint on (session_id, product_id).
 - `retouch_sessions`: id, session_name (unique), sent_to (pixelz/masking/null), carry_overs_sourced (bool), created_at, updated_at
 
 ### API Endpoints (under /api)
@@ -60,7 +61,9 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén, Agne
 - `POST /import/preview` — Preview all sheets in an Excel file
 - `POST /import/execute` — Import selected sheets, creating projects per sheet
 - `GET/POST /products/:productId/comments` — comments per product
-- `GET/POST /sessions`, `DELETE /sessions/:id` — studio session CRUD
+- `GET/POST /sessions`, `PATCH/DELETE /sessions/:id` — studio session CRUD with product association
+- `GET /sessions/:id/products` — products linked to a session
+- `GET /wizard/products` — all products with brand (from project) for booking wizard
 - `GET /capture-sessions` — auto-collected sessions from product shot fields with status breakdowns
 - `PATCH /capture-sessions/bulk-status` — bulk update upload status for multiple products (supports all 8 statuses)
 - `PATCH /products/bulk-update` — bulk update products (upload status, delivery status, factory delayed, reshoot). Validates required shots when setting to "Ready for Upload" — reverts products missing shots to "Not Started" and returns reverted product details.
@@ -97,6 +100,6 @@ React + Vite frontend. Uses wouter for routing, React Query for data fetching, s
 ### `lib/db` (`@workspace/db`)
 
 Drizzle ORM with PostgreSQL. Schema files in `src/schema/`:
-- users.ts, projects.ts, products.ts, comments.ts, studio-sessions.ts
+- users.ts, projects.ts, products.ts, comments.ts, studio-sessions.ts, session-products.ts, retouch-sessions.ts
 
 Development: `pnpm --filter @workspace/db run push` (or `push-force`)

@@ -4,3 +4,4 @@ export * from "./products";
 export * from "./comments";
 export * from "./studio-sessions";
 export * from "./retouch-sessions";
+export * from "./session-products";
