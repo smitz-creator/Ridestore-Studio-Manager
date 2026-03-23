@@ -24,10 +24,10 @@ function ToggleChip({ label, selected, onClick, hint }: { label: string; selecte
       onClick={onClick}
       title={hint}
       className={cn(
-        "px-3 py-1.5 rounded-md text-xs font-medium border transition-all",
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors",
         selected
-          ? "bg-emerald-600 border-emerald-600 text-white"
-          : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+          ? "border-transparent bg-emerald-900/30 text-emerald-400"
+          : "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80"
       )}
     >
       {label}
