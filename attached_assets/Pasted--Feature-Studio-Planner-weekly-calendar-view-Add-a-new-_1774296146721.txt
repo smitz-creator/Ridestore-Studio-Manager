@@ -1,0 +1,70 @@
+
+Feature: Studio Planner — weekly calendar view
+Add a new page called "Planner" in the sidebar navigation, visible to all users. Place it between "Photo Shoots" and "Shoot" in the nav. This is a weekly calendar for planning the entire studio season.
+Calendar Layout:
+	1	Weekly grid view — Monday to Friday columns, with rows for each team member. Each week shows:
+	◦	Week header row: Week number + date range (e.g., "WEEK 14 — Mar 30 – Apr 3, 2026")
+	◦	Row: Photo — what's being shot in the studio that day
+	◦	Row: Philip — Philip's tasks (selection/cropping work)
+	◦	Row: Smitz — Smitz's tasks (retouching)
+	◦	Row: Oskar — Oskar's tasks (naming, uploading, coordination)
+	◦	Row: Agnes — Agnes's tasks (naming)
+	2	Date range: Full year — Week 1 (January 5, 2026) through Week 52 (December 25, 2026) — 52 weeks covering the full year.
+	3	By default, only show the current week and all future weeks. Past weeks (before the current week) are hidden.
+	4	"Show past schedule" button at the very top of the page. When clicked, it expands/reveals all past weeks above the current week. Button text changes to "Hide past schedule" to toggle them back off. Past weeks should have a slightly faded/muted appearance to visually distinguish them from current and future weeks.
+	5	Navigation: Arrow buttons to scroll between weeks, plus a "Jump to this week" button that scrolls to the current week and highlights it. Also a week range selector at the top.
+Cells and Blocks:
+	6	Each cell (person × day) can hold one or more "blocks" — these are colored tags/pills showing what's planned. Clicking an empty cell opens a quick-add popup where you type the activity name and optionally pick a color/category.
+	7	Block categories with colors:
+	◦	🟢 Gallery shoot — green
+	◦	🔵 Details shoot — blue
+	◦	🟣 Mixed shoot — purple
+	◦	🟠 Retouch/Post-production — orange
+	◦	🔴 Deadline/Launch — red
+	◦	⚪ Meeting — grey
+	◦	🟡 Other/Misc — yellow
+	◦	🔘 Holiday/Leave — dark grey with strikethrough text
+	8	Blocks are editable — click to edit text, change color/category, or delete. Drag to move to a different day (same row).
+	9	Milestone banners — special blocks that span across the full week header (above all person rows). These are for launch dates, deadlines, and major milestones like "DOPE FW26 LAUNCH" or "MONTEC PREVIEW DEADLINE". Red/highlighted styling to stand out.
+Auto-population from app data:
+	10	Booked Photo Shoots automatically appear in the "Photo" row on their booked date, showing the shoot name and brand badge. These are read-only synced blocks — editing happens in the Photo Shoots page.
+	11	Products in pipeline stages can optionally generate suggested blocks:
+	◦	Products at "Ready for Selection" → suggested block on Philip's row
+	◦	Products at "Ready for Retouch" → suggested block on Smitz's row
+	◦	Products at "Post Production - Done" → suggested block on Oskar/Agnes row (These are optional/dismissable suggestions, not mandatory)
+Mock schedule for now (pre-populate with sample data):
+Week 14 (Mar 30 – Apr 3):
+	•	Photo: Mon "Dope Jacket Women Gallery", Tue "Dope Jacket Women Gallery", Wed "Dope Jacket Men Gallery"
+	•	Philip: empty
+	•	Smitz: empty
+	•	Oskar: Mon "Prep studio samples"
+Week 15 (Apr 6 – Apr 10):
+	•	Photo: Mon "Dope Jacket Men Gallery", Tue "Dope Pants Women Gallery", Wed "Dope Pants Men Gallery"
+	•	Philip: Mon "Selection — Jackets Women W14"
+	•	Smitz: empty
+	•	Oskar: empty
+Week 16 (Apr 13 – Apr 17):
+	•	Photo: Mon "Montec Jacket Women Gallery", Tue "Montec Jacket Women Gallery", Wed "Montec Jacket Men Gallery"
+	•	Philip: Mon "Selection — Jackets Men W14-15"
+	•	Smitz: Wed "Retouch — Jackets Women"
+	•	Oskar: empty
+Week 17 (Apr 20 – Apr 24):
+	•	Photo: Mon "Montec Jacket Men Gallery", Tue "Details Dope Jackets", Wed "Details Dope Jackets"
+	•	Philip: Tue "Selection — Pants"
+	•	Smitz: Mon "Retouch — Jackets Men"
+	•	Oskar: Fri "Naming — Jackets batch 1"
+	•	Milestone: "DOPE PREVIEW DEADLINE" on Friday
+Week 18 (Apr 27 – May 1):
+	•	Photo: Mon "Details Montec Jackets", Tue "Details Montec Jackets", Wed "Dope Accessories Gallery"
+	•	Smitz: Mon "Retouch — Montec Jackets"
+	•	Oskar: Mon "Upload — Jackets batch 1"
+	•	Agnes: Tue "Naming — Pants batch 1"
+Leave all other weeks empty — ready to be filled in when launch dates are confirmed.
+Design:
+	•	Dark mode matching the rest of the app
+	•	Compact grid — each cell should be relatively small with pill/tag blocks inside
+	•	Current week highlighted with a subtle border or background accent
+	•	Past weeks (when shown) slightly faded
+	•	Clean, readable week headers
+	•	Responsive — scroll horizontally if needed on smaller screens
+

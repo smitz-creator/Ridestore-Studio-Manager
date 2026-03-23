@@ -5,3 +5,4 @@ export * from "./comments";
 export * from "./studio-sessions";
 export * from "./retouch-sessions";
 export * from "./session-products";
+export * from "./planner-blocks";

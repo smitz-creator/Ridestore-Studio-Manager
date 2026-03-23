@@ -43,6 +43,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén, Agne
 - **Naming Tracker** (Oskar & Agnes only): Dedicated view at `/naming` for file renaming and asset verification. Shows products at "Post Production Done" grouped by Gallery Shots session name. Same layout as Selection — collapsible session cards, individual tick-off or "Complete Session" bulk action moves products to "Ready for Upload". CO products auto-promoted. Yellow color scheme.
 - **Upload Tracker** (Oskar only): Final pipeline step at `/upload`. Shows products at "Ready for Upload" grouped by session name. Tick-off moves products to "Uploaded". CO auto-promoted. Green color scheme. Emerald nav button.
 - **Retouch Tracker** (Smitz only): Dedicated post-production hub at `/retouch` with two sections. **Ready for Retouch**: tick-off products (individually or "Complete Session") to move to "In Post Production"; CO products auto-promoted. **In Post Production**: session cards with "Send to Pixelz"/"Send to Masking" buttons (sets badge + "Waiting" state), carry-over product highlighting (blue bold key codes), copy CO key codes (individual + bulk), "Carry Overs Sourced" checkbox, "Done" button (enabled only when session is in Waiting mode) moves all products to "Post Production Done". Session metadata stored in `retouch_sessions` DB table.
+- **Studio Planner**: Weekly calendar view (Mon-Fri, 52 weeks). Rows: Photo, Philip, Smitz, Oskar, Agnes. Colored block categories (Gallery=green, Details=blue, Mixed=purple, Retouch=orange, Deadline=red, Meeting=grey, Other=yellow, Holiday=dark grey+strikethrough). Milestone banners span full week header. Photo shoots auto-sync to Photo row. Click cells to add blocks, click blocks to edit/delete. Show/hide past weeks, jump to current week.
 
 ### Database Tables
 - `users`: id, name, created_at
@@ -52,6 +53,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén, Agne
 - `studio_sessions`: id, date, model_name, brand, shot_type, notes, created_by_id, created_at
 - `session_products`: id, session_id (FK→studio_sessions), product_id (FK→products), created_at. Unique constraint on (session_id, product_id).
 - `retouch_sessions`: id, session_name (unique), sent_to (pixelz/masking/null), carry_overs_sourced (bool), created_at, updated_at
+- `planner_blocks`: id, week_number, year, day_index, row, label, category, is_milestone, linked_session_id
 
 ### API Endpoints (under /api)
 - `GET /users` — list all users
@@ -68,6 +70,10 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén, Agne
 - `PATCH /capture-sessions/bulk-status` — bulk update upload status for multiple products (supports all 8 statuses)
 - `PATCH /products/bulk-update` — bulk update products (upload status, delivery status, factory delayed, reshoot). Validates required shots when setting to "Ready for Upload" — reverts products missing shots to "Not Started" and returns reverted product details.
 - `GET /dashboard` — upcoming/past sessions for dashboard
+- `GET /planner/blocks?year=2026` — planner blocks for a year
+- `POST /planner/blocks` — create planner block
+- `PATCH /planner/blocks/:id` — update planner block
+- `DELETE /planner/blocks/:id` — delete planner block
 
 ### Frontend Pages
 - `/` — Login (if not authenticated) or Dashboard
@@ -76,6 +82,7 @@ Simple name-pick login (no passwords): Smitz, Oskar, Issa, Philip, Nordén, Agne
 - `/shooting-mode` — Multi-step guided shooting workflow
 - `/capture-sessions` — Auto-grouped capture sessions
 - `/sessions` — Studio sessions management ("Photo Shoots")
+- `/planner` — Studio Planner weekly calendar (Mon-Fri, rows for Photo/Philip/Smitz/Oskar/Agnes, colored block categories, milestones, auto-synced photo shoots)
 
 ## TypeScript & Composite Projects
 
@@ -89,7 +96,7 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 ### `artifacts/api-server` (`@workspace/api-server`)
 
 Express 5 API server. Routes in `src/routes/`. Uses `@workspace/db` for persistence.
-- Routes: users, projects, products, comments, sessions, health, dashboard, import, capture-sessions
+- Routes: users, projects, products, comments, sessions, health, dashboard, import, capture-sessions, planner
 
 ### `artifacts/studio-app` (`@workspace/studio-app`)
 
@@ -100,6 +107,6 @@ React + Vite frontend. Uses wouter for routing, React Query for data fetching, s
 ### `lib/db` (`@workspace/db`)
 
 Drizzle ORM with PostgreSQL. Schema files in `src/schema/`:
-- users.ts, projects.ts, products.ts, comments.ts, studio-sessions.ts, session-products.ts, retouch-sessions.ts
+- users.ts, projects.ts, products.ts, comments.ts, studio-sessions.ts, session-products.ts, retouch-sessions.ts, planner-blocks.ts
 
 Development: `pnpm --filter @workspace/db run push` (or `push-force`)

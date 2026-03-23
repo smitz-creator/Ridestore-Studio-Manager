@@ -69,6 +69,10 @@ export const api = {
     }
     return res.json() as Promise<{ sheets: { sheetName: string; brand: string; rowCount: number }[]; detectedSeason: string; filename: string }>;
   },
+  getPlannerBlocks: (year?: number) => fetchJson(`/planner/blocks?year=${year || 2026}`),
+  createPlannerBlock: (data: any) => fetchJson("/planner/blocks", { method: "POST", body: JSON.stringify(data) }),
+  updatePlannerBlock: (id: number, data: any) => fetchJson(`/planner/blocks/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  deletePlannerBlock: (id: number) => fetchJson(`/planner/blocks/${id}`, { method: "DELETE" }),
   getRetouchSessions: () => fetchJson("/retouch-sessions"),
   updateRetouchSession: (sessionName: string, data: any) =>
     fetchJson(`/retouch-sessions/${encodeURIComponent(sessionName)}`, { method: "PATCH", body: JSON.stringify(data) }),

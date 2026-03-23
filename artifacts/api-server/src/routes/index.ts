@@ -8,6 +8,7 @@ import sessionsRouter from "./sessions";
 import importRouter from "./import";
 import captureSessionsRouter from "./capture-sessions";
 import retouchSessionsRouter from "./retouch-sessions";
+import plannerRouter from "./planner";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(sessionsRouter);
 router.use(importRouter);
 router.use(captureSessionsRouter);
 router.use(retouchSessionsRouter);
+router.use(plannerRouter);
 
 export default router;
