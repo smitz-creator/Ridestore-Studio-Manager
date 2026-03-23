@@ -632,17 +632,6 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
   onBack: () => void;
   loading: boolean;
 }) {
-  const [expandedModels, setExpandedModels] = React.useState<Set<string>>(new Set());
-
-  const toggleExpand = (model: string) => {
-    setExpandedModels(prev => {
-      const next = new Set(prev);
-      if (next.has(model)) next.delete(model);
-      else next.add(model);
-      return next;
-    });
-  };
-
   const productsByModel = React.useMemo(() => {
     const map = new Map<string, any[]>();
     for (const p of products) {
@@ -653,8 +642,11 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
     return map;
   }, [products]);
 
+  const allSelectable = products.filter(p => !state.selectedProductIds.includes(p.id));
+  const allSelected = allSelectable.length > 0 && allSelectable.every(p => selected.has(p.id));
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={onBack}>
@@ -680,86 +672,47 @@ function Step2({ state, products, models, selected, onToggle, onToggleModel, onS
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onSelectAll}>
-          {selected.size > 0 && products.filter(p => !state.selectedProductIds.includes(p.id)).every(p => selected.has(p.id)) ? "Deselect All" : "Select All"}
-        </Button>
-        <span className="text-xs text-muted-foreground">{models.length} models, {products.length} products</span>
-      </div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">4. Select Models</h2>
+          <button
+            type="button"
+            onClick={onSelectAll}
+            className="text-xs text-emerald-400 hover:underline"
+          >
+            {allSelected ? "Deselect All" : "Select All"}
+          </button>
+        </div>
 
-      <div className="border rounded-lg overflow-hidden max-h-[55vh] overflow-y-auto">
         {models.length === 0 ? (
           <p className="p-6 text-center text-muted-foreground text-sm">No matching products found</p>
         ) : (
-          <div className="divide-y">
-            {models.map(([modelName]) => {
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {models.map(([modelName, count]) => {
               const modelProducts = productsByModel.get(modelName) || [];
               const selectableProducts = modelProducts.filter(p => !state.selectedProductIds.includes(p.id));
-              const selectedInModel = selectableProducts.filter(p => selected.has(p.id)).length;
-              const isExpanded = expandedModels.has(modelName);
-              const allModelSelected = selectableProducts.length > 0 && selectedInModel === selectableProducts.length;
+              const allModelSelected = selectableProducts.length > 0 && selectableProducts.every(p => selected.has(p.id));
               const inSessionCount = modelProducts.filter(p => state.selectedProductIds.includes(p.id)).length;
 
               return (
-                <div key={modelName}>
-                  <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/30 hover:bg-muted/50 transition-colors">
-                    <Checkbox
-                      checked={allModelSelected}
-                      onCheckedChange={() => onToggleModel(modelName)}
-                      disabled={selectableProducts.length === 0}
-                    />
-                    <button
-                      onClick={() => toggleExpand(modelName)}
-                      className="flex-1 flex items-center gap-2 text-left"
-                    >
-                      {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                      <span className="font-medium text-sm">{modelName}</span>
-                      <span className="text-xs text-muted-foreground">({modelProducts.length} items)</span>
-                      {selectedInModel > 0 && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{selectedInModel} selected</Badge>
-                      )}
-                      {inSessionCount > 0 && (
-                        <Badge className="text-[10px] px-1.5 py-0 bg-cyan-100 text-cyan-800 hover:bg-cyan-100">{inSessionCount} in session</Badge>
-                      )}
-                    </button>
-                  </div>
-                  {isExpanded && (
-                    <div className="bg-background">
-                      {modelProducts.map(p => {
-                        const isSelected = selected.has(p.id);
-                        const alreadyInSession = state.selectedProductIds.includes(p.id);
-                        const statusLabel = p.uploadStatus?.replace(/_/g, " ");
-                        return (
-                          <div
-                            key={p.id}
-                            onClick={() => !alreadyInSession && onToggle(p.id)}
-                            className={cn(
-                              "flex items-center gap-3 px-3 py-2 pl-12 border-t transition-colors text-sm",
-                              alreadyInSession ? "cursor-default bg-cyan-900/20" : isSelected ? "bg-primary/5 cursor-pointer" : "hover:bg-secondary/50 cursor-pointer"
-                            )}
-                          >
-                            {alreadyInSession ? (
-                              <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0" />
-                            ) : (
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={() => onToggle(p.id)}
-                              />
-                            )}
-                            <span className="flex-1">{p.productType}</span>
-                            <span className="text-muted-foreground">{p.colour || "–"}</span>
-                            <span className="text-xs text-muted-foreground font-mono">{p.keyCode || ""}</span>
-                            {alreadyInSession ? (
-                              <Badge className="text-[10px] bg-cyan-100 text-cyan-800 hover:bg-cyan-100 shrink-0">In session</Badge>
-                            ) : statusLabel && statusLabel !== "not started" ? (
-                              <Badge variant="outline" className="text-[10px] shrink-0">{statusLabel}</Badge>
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                    </div>
+                <button
+                  key={modelName}
+                  onClick={() => onToggleModel(modelName)}
+                  disabled={selectableProducts.length === 0}
+                  className={cn(
+                    "p-4 rounded-xl text-sm font-bold border-2 transition-all uppercase text-center",
+                    allModelSelected
+                      ? "border-primary bg-primary/10 text-primary"
+                      : selectableProducts.length === 0
+                        ? "border-border/50 bg-muted/30 text-muted-foreground/50 cursor-not-allowed"
+                        : "border-border hover:border-primary/50 hover:bg-secondary"
                   )}
-                </div>
+                >
+                  {modelName}
+                  <span className="block text-[11px] font-normal mt-0.5 opacity-70">
+                    ({selectableProducts.length}{inSessionCount > 0 ? ` + ${inSessionCount} in session` : ""})
+                  </span>
+                </button>
               );
             })}
           </div>
