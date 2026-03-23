@@ -52,6 +52,7 @@ type ShootingState = {
   selectedProductIds: number[];
   previousStatuses: Map<number, string>;
   continueMode: boolean;
+  fromSuggestion: boolean;
 };
 
 function parseMulti(val: string | undefined | null): string[] {
@@ -91,6 +92,7 @@ export default function ShootingMode() {
     selectedProductIds: [],
     previousStatuses: new Map(),
     continueMode: false,
+    fromSuggestion: false,
   });
 
   const [initialStepResolved, setInitialStepResolved] = React.useState(false);
@@ -421,15 +423,18 @@ export default function ShootingMode() {
       ? `${brand.id}_${gender.id}_${pt.id}_${seasonPrefix}${yr}_${dd}.${mm}`
       : `SHOOT_${seasonPrefix}${yr}_${dd}.${mm}`;
 
+    const selectedSet = new Set(productIds);
+    setStep2Selected(selectedSet);
+    setConfirmAvailable(new Set(productIds));
     setState(s => ({
       ...s,
-      step: 2,
+      step: "confirm",
       brand,
       gender,
       productType: pt,
       sessionName: sName,
+      fromSuggestion: true,
     }));
-    setStep2Selected(new Set(productIds));
   };
 
   const handleSkipSuggestions = () => {
@@ -480,7 +485,7 @@ export default function ShootingMode() {
             available={confirmAvailable}
             onToggle={handleConfirmToggle}
             onConfirm={handleConfirmAndStart}
-            onBack={() => setState(s => ({ ...s, step: 2 }))}
+            onBack={() => setState(s => ({ ...s, step: s.fromSuggestion ? "suggest" : 2, fromSuggestion: false }))}
             loading={bulkUpdateMut.isPending || updateProductMut.isPending}
           />
         )}
@@ -1154,7 +1159,7 @@ function StepSuggestion({ sessions, onUseSuggestion, onSkip }: {
           <Camera className="w-8 h-8 text-primary" />
           <h1 className="text-3xl font-bold">Shooting Mode</h1>
         </div>
-        <p className="text-muted-foreground">You have {sessions.length === 1 ? "a shoot" : `${sessions.length} shoots`} planned for today</p>
+        <p className="text-muted-foreground">You have {sessions.length === 1 ? "1 suggested shoot plan" : `${sessions.length} suggested shoot plans`} for today</p>
       </div>
 
       <div className="space-y-3">
