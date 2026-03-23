@@ -15,6 +15,7 @@ import { Plus, Calendar, Trash2, Pencil, Check, ChevronDown, ChevronUp, Package 
 import { cn } from "@/lib/utils";
 
 const SHOT_TYPES = ["Gallery", "Details", "Mixed", "Misc"];
+const MODELS = ["Alma", "Norton"];
 
 function ToggleChip({ label, selected, onClick, hint }: { label: string; selected: boolean; onClick: () => void; hint?: string }) {
   return (
@@ -55,17 +56,6 @@ interface WizardProduct {
   brand: string;
 }
 
-interface WizardState {
-  shotTypes: string[];
-  brands: string[];
-  genders: string[];
-  productTypes: string[];
-  selectedProductIds: Set<number>;
-  date: string;
-  modelName: string;
-  notes: string;
-}
-
 const STATUS_LABELS: Record<string, string> = {
   not_started: "Not Started",
   in_the_studio: "In Studio",
@@ -97,108 +87,88 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
     enabled: !!editingSession,
   });
 
-  const [wiz, setWiz] = React.useState<WizardState>({
-    shotTypes: [], brands: [], genders: [], productTypes: [],
-    selectedProductIds: new Set(),
-    date: new Date().toISOString().split("T")[0],
-    modelName: "", notes: "",
-  });
-
+  const [brands, setBrands] = React.useState<string[]>([]);
+  const [genders, setGenders] = React.useState<string[]>([]);
+  const [productTypes, setProductTypes] = React.useState<string[]>([]);
+  const [selectedProductIds, setSelectedProductIds] = React.useState<Set<number>>(new Set());
+  const [date, setDate] = React.useState(new Date().toISOString().split("T")[0]);
+  const [modelName, setModelName] = React.useState("");
+  const [modelMode, setModelMode] = React.useState<"preset" | "other">("preset");
+  const [shotTypes, setShotTypes] = React.useState<string[]>([]);
+  const [notes, setNotes] = React.useState("");
   const [expandedStep, setExpandedStep] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     if (editingSession) {
-      const brands = parseMulti(editingSession.brand);
-      const shotTypes = parseMulti(editingSession.shotType);
+      const eBrands = parseMulti(editingSession.brand);
+      const eShotTypes = parseMulti(editingSession.shotType);
       const dateStr = editingSession.date ? new Date(editingSession.date).toISOString().split("T")[0] : "";
-      setWiz(prev => ({
-        ...prev,
-        shotTypes,
-        brands,
-        date: dateStr,
-        modelName: editingSession.modelName || "",
-        notes: editingSession.notes || "",
-      }));
+      setBrands(eBrands);
+      setShotTypes(eShotTypes);
+      setDate(dateStr);
+      setNotes(editingSession.notes || "");
+      const name = editingSession.modelName || "";
+      if (MODELS.includes(name)) {
+        setModelName(name);
+        setModelMode("preset");
+      } else {
+        setModelName(name);
+        setModelMode(name ? "other" : "preset");
+      }
     }
   }, [editingSession]);
 
   React.useEffect(() => {
-    if (editingSession && existingProductIds) {
-      const pids = new Set(existingProductIds);
-      setWiz(prev => ({ ...prev, selectedProductIds: pids }));
-
+    if (editingSession && existingProductIds && allProducts.length > 0) {
+      setSelectedProductIds(new Set(existingProductIds));
       if (existingProductIds.length > 0) {
-        const existingProducts = allProducts.filter(p => existingProductIds.includes(p.id));
-        const genders = [...new Set(existingProducts.map(p => p.gender))];
-        const productTypes = [...new Set(existingProducts.map(p => p.productType))];
-        setWiz(prev => ({
-          ...prev,
-          genders: genders.length > 0 ? genders : prev.genders,
-          productTypes: productTypes.length > 0 ? productTypes : prev.productTypes,
-        }));
+        const existing = allProducts.filter(p => existingProductIds.includes(p.id));
+        const g = [...new Set(existing.map(p => p.gender))];
+        const pt = [...new Set(existing.map(p => p.productType))];
+        if (g.length > 0) setGenders(g);
+        if (pt.length > 0) setProductTypes(pt);
       }
     }
   }, [editingSession, existingProductIds, allProducts]);
 
-  const availableBrands = React.useMemo(() => {
-    const brands = [...new Set(allProducts.map(p => p.brand))];
-    return brands.sort();
-  }, [allProducts]);
+  const availableBrands = React.useMemo(() => [...new Set(allProducts.map(p => p.brand))].sort(), [allProducts]);
 
   const filteredByBrand = React.useMemo(() => {
-    if (wiz.brands.length === 0) return [];
-    return allProducts.filter(p => wiz.brands.includes(p.brand));
-  }, [allProducts, wiz.brands]);
+    if (brands.length === 0) return [];
+    return allProducts.filter(p => brands.includes(p.brand));
+  }, [allProducts, brands]);
 
-  const availableGenders = React.useMemo(() => {
-    const genders = [...new Set(filteredByBrand.map(p => p.gender))];
-    return genders.sort();
-  }, [filteredByBrand]);
+  const availableGenders = React.useMemo(() => [...new Set(filteredByBrand.map(p => p.gender))].sort(), [filteredByBrand]);
 
   const filteredByGender = React.useMemo(() => {
-    if (wiz.genders.length === 0) return [];
-    return filteredByBrand.filter(p => wiz.genders.includes(p.gender));
-  }, [filteredByBrand, wiz.genders]);
+    if (genders.length === 0) return [];
+    return filteredByBrand.filter(p => genders.includes(p.gender));
+  }, [filteredByBrand, genders]);
 
-  const availableProductTypes = React.useMemo(() => {
-    const types = [...new Set(filteredByGender.map(p => p.productType))];
-    return types.sort();
-  }, [filteredByGender]);
+  const availableProductTypes = React.useMemo(() => [...new Set(filteredByGender.map(p => p.productType))].sort(), [filteredByGender]);
 
   const filteredProducts = React.useMemo(() => {
-    if (wiz.productTypes.length === 0) return [];
-    return filteredByGender.filter(p => wiz.productTypes.includes(p.productType));
-  }, [filteredByGender, wiz.productTypes]);
+    if (productTypes.length === 0) return [];
+    return filteredByGender.filter(p => productTypes.includes(p.productType));
+  }, [filteredByGender, productTypes]);
 
   const resetFrom = (step: number) => {
-    setWiz(prev => {
-      const next = { ...prev };
-      if (step <= 2) { next.brands = []; next.genders = []; next.productTypes = []; next.selectedProductIds = new Set(); }
-      else if (step <= 3) { next.genders = []; next.productTypes = []; next.selectedProductIds = new Set(); }
-      else if (step <= 4) { next.productTypes = []; next.selectedProductIds = new Set(); }
-      else if (step <= 5) { next.selectedProductIds = new Set(); }
+    if (step <= 1) { setBrands([]); setGenders([]); setProductTypes([]); setSelectedProductIds(new Set()); }
+    else if (step <= 2) { setGenders([]); setProductTypes([]); setSelectedProductIds(new Set()); }
+    else if (step <= 3) { setProductTypes([]); setSelectedProductIds(new Set()); }
+    else if (step <= 4) { setSelectedProductIds(new Set()); }
+  };
+
+  const toggleProduct = (id: number) => {
+    setSelectedProductIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
 
-  const toggleProduct = (id: number) => {
-    setWiz(prev => {
-      const next = new Set(prev.selectedProductIds);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return { ...prev, selectedProductIds: next };
-    });
-  };
-
-  const selectAll = () => {
-    setWiz(prev => ({
-      ...prev,
-      selectedProductIds: new Set(filteredProducts.map(p => p.id)),
-    }));
-  };
-
-  const deselectAll = () => {
-    setWiz(prev => ({ ...prev, selectedProductIds: new Set() }));
-  };
+  const selectAll = () => setSelectedProductIds(new Set(filteredProducts.map(p => p.id)));
+  const deselectAll = () => setSelectedProductIds(new Set());
 
   const createMut = useMutation({
     mutationFn: (data: any) => api.createSession(data),
@@ -222,24 +192,26 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const step1Done = wiz.shotTypes.length > 0;
-  const step2Done = wiz.brands.length > 0;
-  const step3Done = wiz.genders.length > 0;
-  const step4Done = wiz.productTypes.length > 0;
-  const step5Done = wiz.selectedProductIds.size > 0;
-  const canSubmit = step1Done && step2Done && wiz.date && wiz.modelName.trim();
+  const step1Done = brands.length > 0;
+  const step2Done = genders.length > 0;
+  const step3Done = productTypes.length > 0;
+  const step4Done = selectedProductIds.size > 0;
+  const showDetails = step4Done;
+
+  const canSubmit = step1Done && step4Done && date && modelName.trim() && shotTypes.length > 0;
 
   const handleSubmit = () => {
-    if (!wiz.date) { toast({ title: "Date is required", variant: "destructive" }); return; }
-    if (!wiz.modelName.trim()) { toast({ title: "Model - Product is required", variant: "destructive" }); return; }
+    if (!date) { toast({ title: "Date is required", variant: "destructive" }); return; }
+    if (!modelName.trim()) { toast({ title: "Model is required", variant: "destructive" }); return; }
+    if (shotTypes.length === 0) { toast({ title: "Select at least one shot type", variant: "destructive" }); return; }
 
     const payload = {
-      date: wiz.date,
-      modelName: wiz.modelName,
-      brand: wiz.brands.join(", "),
-      shotType: wiz.shotTypes.join(", "),
-      notes: wiz.notes,
-      productIds: [...wiz.selectedProductIds],
+      date,
+      modelName,
+      brand: brands.join(", "),
+      shotType: shotTypes.join(", "),
+      notes,
+      productIds: [...selectedProductIds],
       createdById: user?.id,
     };
 
@@ -254,23 +226,24 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
 
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Product Selection</div>
+
       <StepSection
         stepNum={1}
-        title="Shot Type"
+        title="Brand"
         done={step1Done}
-        summary={step1Done ? wiz.shotTypes.join(", ") : ""}
+        summary={step1Done ? brands.join(", ") : ""}
         expanded={expandedStep === 1 || !step1Done}
-        onToggle={() => { setExpandedStep(expandedStep === 1 ? null : 1); }}
+        onToggle={() => setExpandedStep(expandedStep === 1 ? null : 1)}
         onReset={() => { resetFrom(1); setExpandedStep(null); }}
       >
         <div className="flex flex-wrap gap-2">
-          {SHOT_TYPES.map(s => (
+          {availableBrands.map(b => (
             <ToggleChip
-              key={s}
-              label={s}
-              selected={wiz.shotTypes.includes(s)}
-              onClick={() => setWiz(prev => ({ ...prev, shotTypes: toggleInArray(prev.shotTypes, s) }))}
-              hint={s === "Mixed" ? "Gallery + Details in the same session" : undefined}
+              key={b}
+              label={b}
+              selected={brands.includes(b)}
+              onClick={() => { resetFrom(2); setBrands(prev => toggleInArray(prev, b)); }}
             />
           ))}
         </div>
@@ -279,23 +252,20 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
       {step1Done && (
         <StepSection
           stepNum={2}
-          title="Brand"
+          title="Gender"
           done={step2Done}
-          summary={step2Done ? wiz.brands.join(", ") : ""}
+          summary={step2Done ? genders.join(", ") : ""}
           expanded={expandedStep === 2 || (step1Done && !step2Done)}
           onToggle={() => setExpandedStep(expandedStep === 2 ? null : 2)}
           onReset={() => { resetFrom(2); setExpandedStep(null); }}
         >
           <div className="flex flex-wrap gap-2">
-            {availableBrands.map(b => (
+            {availableGenders.map(g => (
               <ToggleChip
-                key={b}
-                label={b}
-                selected={wiz.brands.includes(b)}
-                onClick={() => {
-                  resetFrom(3);
-                  setWiz(prev => ({ ...prev, brands: toggleInArray(prev.brands, b) }));
-                }}
+                key={g}
+                label={g}
+                selected={genders.includes(g)}
+                onClick={() => { resetFrom(3); setGenders(prev => toggleInArray(prev, g)); }}
               />
             ))}
           </div>
@@ -305,23 +275,20 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
       {step1Done && step2Done && (
         <StepSection
           stepNum={3}
-          title="Gender"
+          title="Product Type"
           done={step3Done}
-          summary={step3Done ? wiz.genders.join(", ") : ""}
+          summary={step3Done ? productTypes.join(", ") : ""}
           expanded={expandedStep === 3 || (step2Done && !step3Done)}
           onToggle={() => setExpandedStep(expandedStep === 3 ? null : 3)}
           onReset={() => { resetFrom(3); setExpandedStep(null); }}
         >
           <div className="flex flex-wrap gap-2">
-            {availableGenders.map(g => (
+            {availableProductTypes.map(pt => (
               <ToggleChip
-                key={g}
-                label={g}
-                selected={wiz.genders.includes(g)}
-                onClick={() => {
-                  resetFrom(4);
-                  setWiz(prev => ({ ...prev, genders: toggleInArray(prev.genders, g) }));
-                }}
+                key={pt}
+                label={pt}
+                selected={productTypes.includes(pt)}
+                onClick={() => { resetFrom(4); setProductTypes(prev => toggleInArray(prev, pt)); }}
               />
             ))}
           </div>
@@ -331,38 +298,12 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
       {step1Done && step2Done && step3Done && (
         <StepSection
           stepNum={4}
-          title="Product Type"
+          title="Products"
           done={step4Done}
-          summary={step4Done ? wiz.productTypes.join(", ") : ""}
+          summary={step4Done ? `${selectedProductIds.size} selected` : ""}
           expanded={expandedStep === 4 || (step3Done && !step4Done)}
           onToggle={() => setExpandedStep(expandedStep === 4 ? null : 4)}
           onReset={() => { resetFrom(4); setExpandedStep(null); }}
-        >
-          <div className="flex flex-wrap gap-2">
-            {availableProductTypes.map(pt => (
-              <ToggleChip
-                key={pt}
-                label={pt}
-                selected={wiz.productTypes.includes(pt)}
-                onClick={() => {
-                  resetFrom(5);
-                  setWiz(prev => ({ ...prev, productTypes: toggleInArray(prev.productTypes, pt) }));
-                }}
-              />
-            ))}
-          </div>
-        </StepSection>
-      )}
-
-      {step1Done && step2Done && step3Done && step4Done && (
-        <StepSection
-          stepNum={5}
-          title="Products"
-          done={step5Done}
-          summary={step5Done ? `${wiz.selectedProductIds.size} selected` : ""}
-          expanded={expandedStep === 5 || (step4Done && !step5Done)}
-          onToggle={() => setExpandedStep(expandedStep === 5 ? null : 5)}
-          onReset={() => { resetFrom(5); setExpandedStep(null); }}
         >
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -374,7 +315,7 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
             </div>
             <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2 bg-background">
               {filteredProducts.map(p => {
-                const checked = wiz.selectedProductIds.has(p.id);
+                const checked = selectedProductIds.has(p.id);
                 return (
                   <label
                     key={p.id}
@@ -398,35 +339,71 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
                 );
               })}
             </div>
-            {wiz.selectedProductIds.size > 0 && (
-              <p className="text-xs font-medium text-emerald-400">{wiz.selectedProductIds.size} product{wiz.selectedProductIds.size !== 1 ? "s" : ""} selected</p>
+            {selectedProductIds.size > 0 && (
+              <p className="text-xs font-medium text-emerald-400">{selectedProductIds.size} product{selectedProductIds.size !== 1 ? "s" : ""} selected</p>
             )}
           </div>
         </StepSection>
       )}
 
-      <div className="space-y-3 pt-2 border-t border-border">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Details</div>
-        <div className="grid grid-cols-2 gap-3">
+      {showDetails && (
+        <div className="space-y-3 pt-2 border-t border-border">
+          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Shoot Details</div>
+
           <div className="space-y-1">
             <Label className="text-xs">Date</Label>
-            <Input type="date" value={wiz.date} onChange={e => setWiz(prev => ({ ...prev, date: e.target.value }))} className="h-8 text-xs" />
+            <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-8 text-xs" />
           </div>
+
           <div className="space-y-1">
-            <Label className="text-xs">Model - Product</Label>
-            <Input value={wiz.modelName} onChange={e => setWiz(prev => ({ ...prev, modelName: e.target.value }))} placeholder="e.g. Akin Jacket" className="h-8 text-xs" />
+            <Label className="text-xs">Model</Label>
+            <div className="flex flex-wrap gap-2">
+              {MODELS.map(m => (
+                <ToggleChip
+                  key={m}
+                  label={m}
+                  selected={modelMode === "preset" && modelName === m}
+                  onClick={() => { setModelMode("preset"); setModelName(m); }}
+                />
+              ))}
+              <ToggleChip
+                label="Other"
+                selected={modelMode === "other"}
+                onClick={() => { setModelMode("other"); setModelName(""); }}
+              />
+            </div>
+            {modelMode === "other" && (
+              <Input value={modelName} onChange={e => setModelName(e.target.value)} placeholder="Enter model name" className="h-8 text-xs mt-2" />
+            )}
           </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Shot Type</Label>
+            <div className="flex flex-wrap gap-2">
+              {SHOT_TYPES.map(s => (
+                <ToggleChip
+                  key={s}
+                  label={s}
+                  selected={shotTypes.includes(s)}
+                  onClick={() => setShotTypes(prev => toggleInArray(prev, s))}
+                  hint={s === "Mixed" ? "Gallery + Details in the same session" : undefined}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Notes</Label>
+            <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes..." className="text-xs min-h-[60px]" />
+          </div>
+
+          <Button onClick={handleSubmit} className="w-full" disabled={!canSubmit || isSubmitting}>
+            {editingSession
+              ? (isSubmitting ? "Saving..." : "Save Changes")
+              : (isSubmitting ? "Booking..." : `Book Photo Shoot (${selectedProductIds.size} products)`)}
+          </Button>
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Notes</Label>
-          <Textarea value={wiz.notes} onChange={e => setWiz(prev => ({ ...prev, notes: e.target.value }))} placeholder="Any notes..." className="text-xs min-h-[60px]" />
-        </div>
-        <Button onClick={handleSubmit} className="w-full" disabled={!canSubmit || isSubmitting}>
-          {editingSession
-            ? (isSubmitting ? "Saving..." : "Save Changes")
-            : (isSubmitting ? "Booking..." : `Book Photo Shoot${wiz.selectedProductIds.size > 0 ? ` (${wiz.selectedProductIds.size} products)` : ""}`)}
-        </Button>
-      </div>
+      )}
     </div>
   );
 }

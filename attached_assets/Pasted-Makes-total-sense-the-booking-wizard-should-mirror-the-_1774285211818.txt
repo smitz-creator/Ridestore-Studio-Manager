@@ -1,0 +1,37 @@
+Makes total sense — the booking wizard should mirror the Shoot Mode flow for selecting products, and then the shoot details (date, model, shot type, notes) are a separate section at the end. Here's the updated prompt:
+
+---
+
+**Feature: Redesign "Book a Photo Shoot" wizard — correct flow**
+
+The current wizard has the wrong step order and mixes product selection with shoot details. Redesign it with two clear sections:
+
+**SECTION 1: Product Selection (same flow as Shooting Mode)**
+
+Step-by-step guided selection, each step hides unchosen options once selected:
+
+1. **Brand** — Dope Snow / Montec (tick one or both, hide unchosen)
+2. **Gender** — Men / Women (based on available products in chosen brand, hide unchosen)
+3. **Product Type** — Show buttons for all product types available within the chosen Brand + Gender (hide unchosen once selected)
+4. **Products** — Show all products matching the filters. Checkboxes to select individual products or "Select All". Display Key Code, Color, Model name, current status. Show count: "23 products selected"
+
+**SECTION 2: Shoot Details (separate section below)**
+
+Once products are selected, show the shoot details section:
+
+5. **Date** — Pre-filled with today's date
+6. **Model** — Instead of a text field, show toggle buttons: **"Alma"** and **"Norton"** (these are the human models in the studio). User picks one. Can also have an "Other" option with a text field for new model names.
+7. **Shot Type** — Toggle pills: Gallery, Details, Mixed, Misc. This is separate from the product selection above — it describes what type of shooting will happen.
+8. **Notes** — Text area for any additional notes
+
+9. **"Book Photo Shoot" button** to confirm
+
+**Behavior:**
+- Section 1 follows the exact same guided narrowing flow as Shooting Mode — pick, hide unchosen, reveal next step
+- Section 2 only appears after at least one product is selected in Section 1
+- User can click on any completed step in Section 1 to go back and change (resets steps below)
+- The Edit modal should work the same way, with selections pre-filled
+
+---
+
+Paste that in and the booking flow will feel natural — same muscle memory as starting a shoot, but you're planning instead of tracking. Let me know how it looks.
