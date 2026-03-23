@@ -54,7 +54,8 @@ router.delete("/sessions/:id", async (req, res): Promise<void> => {
 });
 
 router.get("/dashboard", async (_req, res): Promise<void> => {
-  const now = new Date();
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
   const sessions = await db
     .select({
       id: studioSessionsTable.id,
@@ -69,8 +70,8 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     .leftJoin(usersTable, eq(studioSessionsTable.createdById, usersTable.id))
     .orderBy(desc(studioSessionsTable.date));
 
-  const upcoming = sessions.filter(s => new Date(s.date) >= now);
-  const past = sessions.filter(s => new Date(s.date) < now);
+  const upcoming = sessions.filter(s => new Date(s.date) >= today);
+  const past = sessions.filter(s => new Date(s.date) < today);
 
   res.json({ upcoming: upcoming.reverse(), past });
 });
