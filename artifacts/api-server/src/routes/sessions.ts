@@ -45,6 +45,24 @@ router.post("/sessions", async (req, res): Promise<void> => {
   res.status(201).json({ ...session, createdByName: user?.name ?? "Unknown" });
 });
 
+router.patch("/sessions/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { date, modelName, brand, shotType, notes } = req.body;
+  const updates: any = {};
+  if (date) updates.date = new Date(date);
+  if (modelName !== undefined) updates.modelName = modelName;
+  if (brand !== undefined) updates.brand = brand;
+  if (shotType !== undefined) updates.shotType = shotType;
+  if (notes !== undefined) updates.notes = notes || null;
+  const [session] = await db.update(studioSessionsTable).set(updates).where(eq(studioSessionsTable.id, id)).returning();
+  if (!session) { res.status(404).json({ error: "Not found" }); return; }
+  const [user] = session.createdById
+    ? await db.select({ name: usersTable.name }).from(usersTable).where(eq(usersTable.id, session.createdById))
+    : [{ name: "Unknown" }];
+  res.json({ ...session, createdByName: user?.name ?? "Unknown" });
+});
+
 router.delete("/sessions/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }

@@ -33,6 +33,7 @@ export const api = {
   createComment: (productId: number, data: any) => fetchJson(`/products/${productId}/comments`, { method: "POST", body: JSON.stringify(data) }),
   getSessions: () => fetchJson("/sessions"),
   createSession: (data: any) => fetchJson("/sessions", { method: "POST", body: JSON.stringify(data) }),
+  updateSession: (id: number, data: any) => fetchJson(`/sessions/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteSession: (id: number) => fetchJson(`/sessions/${id}`, { method: "DELETE" }),
   getDashboard: () => fetchJson("/dashboard"),
   getCaptureSessions: () => fetchJson("/capture-sessions"),

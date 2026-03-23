@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar, Trash2 } from "lucide-react";
+import { Plus, Calendar, Trash2, Pencil } from "lucide-react";
 
 const BRANDS = ["Dope Snow", "Montec"];
 const SHOT_TYPES = ["Gallery", "Details", "Misc", "Mixed"];
@@ -24,6 +24,7 @@ export default function Sessions() {
   const { data: sessions, isLoading } = useQuery({ queryKey: ["sessions"], queryFn: api.getSessions });
 
   const [open, setOpen] = React.useState(false);
+  const [editingSession, setEditingSession] = React.useState<any>(null);
   const [form, setForm] = React.useState({
     date: "", modelName: "", brand: BRANDS[0], shotType: SHOT_TYPES[0], notes: "",
   });
@@ -34,11 +35,44 @@ export default function Sessions() {
       qc.invalidateQueries({ queryKey: ["sessions"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpen(false);
+      setEditingSession(null);
       setForm({ date: "", modelName: "", brand: BRANDS[0], shotType: SHOT_TYPES[0], notes: "" });
       toast({ title: "Photo shoot booked" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => api.updateSession(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sessions"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      setOpen(false);
+      setEditingSession(null);
+      setForm({ date: "", modelName: "", brand: BRANDS[0], shotType: SHOT_TYPES[0], notes: "" });
+      toast({ title: "Photo shoot updated" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const openEdit = (session: any) => {
+    const dateStr = session.date ? new Date(session.date).toISOString().split("T")[0] : "";
+    setForm({
+      date: dateStr,
+      modelName: session.modelName || "",
+      brand: session.brand || BRANDS[0],
+      shotType: session.shotType || SHOT_TYPES[0],
+      notes: session.notes || "",
+    });
+    setEditingSession(session);
+    setOpen(true);
+  };
+
+  const openCreate = () => {
+    setForm({ date: "", modelName: "", brand: BRANDS[0], shotType: SHOT_TYPES[0], notes: "" });
+    setEditingSession(null);
+    setOpen(true);
+  };
 
   const deleteMut = useMutation({
     mutationFn: (id: number) => api.deleteSession(id),
@@ -59,7 +93,11 @@ export default function Sessions() {
       toast({ title: "Model Name is required", variant: "destructive" });
       return;
     }
-    createMut.mutate({ ...form, createdById: user?.id });
+    if (editingSession) {
+      updateMut.mutate({ id: editingSession.id, data: form });
+    } else {
+      createMut.mutate({ ...form, createdById: user?.id });
+    }
   };
 
   const today = new Date();
@@ -72,12 +110,10 @@ export default function Sessions() {
       <div className="space-y-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Studio Photo Shoots</h1>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Book a Photo Shoot</Button>
-            </DialogTrigger>
+          <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" /> Book a Photo Shoot</Button>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingSession(null); }}>
             <DialogContent>
-              <DialogHeader><DialogTitle>Book a Photo Shoot</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingSession ? "Edit Photo Shoot" : "Book a Photo Shoot"}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Date</Label>
@@ -111,8 +147,10 @@ export default function Sessions() {
                   <Label>Notes</Label>
                   <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any notes..." />
                 </div>
-                <Button type="submit" className="w-full" disabled={createMut.isPending}>
-                  {createMut.isPending ? "Booking..." : "Book Photo Shoot"}
+                <Button type="submit" className="w-full" disabled={createMut.isPending || updateMut.isPending}>
+                  {editingSession
+                    ? (updateMut.isPending ? "Saving..." : "Save Changes")
+                    : (createMut.isPending ? "Booking..." : "Book Photo Shoot")}
                 </Button>
               </form>
             </DialogContent>
@@ -133,7 +171,7 @@ export default function Sessions() {
               ) : (
                 <div className="grid gap-2">
                   {[...upcoming].reverse().map((s: any) => (
-                    <SessionCard key={s.id} session={s} onDelete={() => deleteMut.mutate(s.id)} />
+                    <SessionCard key={s.id} session={s} onEdit={() => openEdit(s)} onDelete={() => deleteMut.mutate(s.id)} />
                   ))}
                 </div>
               )}
@@ -146,7 +184,7 @@ export default function Sessions() {
               ) : (
                 <div className="grid gap-2">
                   {past.map((s: any) => (
-                    <SessionCard key={s.id} session={s} onDelete={() => deleteMut.mutate(s.id)} past />
+                    <SessionCard key={s.id} session={s} onEdit={() => openEdit(s)} onDelete={() => deleteMut.mutate(s.id)} past />
                   ))}
                 </div>
               )}
@@ -158,7 +196,7 @@ export default function Sessions() {
   );
 }
 
-function SessionCard({ session: s, onDelete, past }: { session: any; onDelete: () => void; past?: boolean }) {
+function SessionCard({ session: s, onEdit, onDelete, past }: { session: any; onEdit: () => void; onDelete: () => void; past?: boolean }) {
   return (
     <div className={`bg-card border rounded-lg p-4 ${past ? "opacity-60" : ""}`}>
       <div className="flex items-center justify-between">
@@ -177,9 +215,14 @@ function SessionCard({ session: s, onDelete, past }: { session: any; onDelete: (
             {s.notes && <p className="text-xs text-muted-foreground mt-1">{s.notes}</p>}
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={onDelete} className="text-muted-foreground hover:text-destructive">
-          <Trash2 className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={onEdit} className="text-muted-foreground hover:text-foreground">
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onDelete} className="text-muted-foreground hover:text-destructive">
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
