@@ -1,0 +1,34 @@
+That's a great UX touch — the app already knows what's planned for today, so it should suggest it. Here's the prompt for Replit:
+
+---
+
+**Feature: Shoot Mode auto-suggestion from booked Photo Shoots**
+
+When a user enters Shooting Mode (clicks "Shoot" in the nav), check if there are any Photo Shoots booked for today. If there are, show a suggestion popup/page BEFORE the normal Shoot Mode flow begins.
+
+**Suggestion page:**
+
+1. **Header:** "Suggestion for today — [Model - Product value from the booked shoot]"
+   - e.g., "Suggestion for today — Adept W on Alma"
+
+2. **Pull and display the booked shoot's selections:**
+   - **Brand:** Show the selected brand(s) as pills/badges (e.g., "Dope Snow")
+   - **Gender:** Show the selected gender(s)
+   - **Product Type:** Show the selected product type(s)
+   - **Products:** List all products that were associated with the booked shoot, showing Key Code, Color, Model name. Show the total count (e.g., "21 products")
+   - **Shot Type:** Show the shot type(s) from the booking (Gallery, Details, Mixed, Misc)
+   - **Notes:** Display any notes from the booking
+
+3. **Two buttons at the bottom:**
+   - **"Create Session based on suggestion"** — Takes the user directly to the confirm availability / session name screen in Shoot Mode, pre-filled with all the selections from the booked shoot (brand, gender, product type, products already selected). The user skips the selection steps and goes straight to confirming and starting the live tracking.
+   - **"I want to do it my own way"** — Dismisses the suggestion and takes the user to the normal Shoot Mode flow from the beginning (brand selection → gender → product type → products).
+
+4. **If there are multiple shoots booked for today**, show each one as a separate suggestion card, and the user can pick one or choose "Do it my own way" to skip all suggestions.
+
+5. **If there are NO shoots booked for today**, skip the suggestion page entirely and go straight to the normal Shoot Mode flow.
+
+6. **The suggestion page should look clean and informative** — it's a quick overview of what's planned so the user can jump right in with one click.
+
+---
+
+Paste that in and Shoot Mode becomes context-aware — it knows what's on the schedule and offers a fast path. No more re-selecting products that were already planned during booking. Let me know how it looks.

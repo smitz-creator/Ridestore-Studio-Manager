@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import {
   ArrowLeft, ArrowRight, Check, Copy, X, Camera,
   CheckCircle2, Circle, Loader2, ChevronDown, ChevronRight,
@@ -36,7 +36,7 @@ const PRODUCT_TYPES = [
   { id: "LENS", label: "LENS", types: ["Replacement Lens Ski"] },
 ];
 
-type ShootingStep = 1 | 2 | "confirm" | 3 | 4;
+type ShootingStep = "suggest" | 1 | 2 | "confirm" | 3 | 4;
 
 const RESHOOT_STATUSES = new Set([
   "ready_for_selection", "ready_for_retouch", "in_post_production",
@@ -54,9 +54,33 @@ type ShootingState = {
   continueMode: boolean;
 };
 
+function parseMulti(val: string | undefined | null): string[] {
+  if (!val) return [];
+  return val.split(",").map(s => s.trim()).filter(Boolean);
+}
+
 export default function ShootingMode() {
   const qc = useQueryClient();
   const { toast } = useToast();
+
+  const { data: sessions } = useQuery({
+    queryKey: ["sessions"],
+    queryFn: api.getSessions,
+  });
+
+  const todaySessions = React.useMemo(() => {
+    if (!sessions) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return sessions.filter((s: any) => {
+      const d = new Date(s.date);
+      return d >= today && d < tomorrow && (s.productCount || 0) > 0;
+    });
+  }, [sessions]);
+
+  const hasSuggestions = todaySessions.length > 0;
 
   const [state, setState] = React.useState<ShootingState>({
     step: 1,
@@ -68,6 +92,17 @@ export default function ShootingMode() {
     previousStatuses: new Map(),
     continueMode: false,
   });
+
+  const [initialStepResolved, setInitialStepResolved] = React.useState(false);
+
+  React.useEffect(() => {
+    if (sessions && !initialStepResolved) {
+      setInitialStepResolved(true);
+      if (hasSuggestions) {
+        setState(s => ({ ...s, step: "suggest" }));
+      }
+    }
+  }, [sessions, hasSuggestions, initialStepResolved]);
 
   const { data: allProducts } = useQuery({
     queryKey: ["all-products"],
@@ -358,9 +393,60 @@ export default function ShootingMode() {
     return `${state.brand.id}_${state.gender.id}_${state.productType.id}_${seasonPrefix}${yr}_${dd}.${mm}`;
   }, [state.brand, state.gender, state.productType]);
 
+  const handleUseSuggestion = async (session: any) => {
+    const products = await api.getSessionProducts(session.id);
+    const productIds = products.map((p: any) => p.id);
+    if (productIds.length === 0) {
+      toast({ title: "No products linked to this shoot", variant: "destructive" });
+      return;
+    }
+
+    const brandNames = parseMulti(session.brand);
+    const brand = BRANDS.find(b => brandNames.includes(b.brand)) || null;
+
+    const firstProduct = products[0];
+    const genderKey = firstProduct?.gender?.toUpperCase();
+    const gender = GENDERS.find(g => g.id === genderKey) || null;
+
+    const productTypeNames = [...new Set(products.map((p: any) => p.productType?.toLowerCase()))];
+    const pt = PRODUCT_TYPES.find(t => t.types.some(tt => productTypeNames.includes(tt.toLowerCase()))) || null;
+
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const month = now.getMonth();
+    const seasonPrefix = month >= 3 && month <= 8 ? "SS" : "FW";
+    const yr = String(now.getFullYear()).slice(-2);
+    const sName = brand && gender && pt
+      ? `${brand.id}_${gender.id}_${pt.id}_${seasonPrefix}${yr}_${dd}.${mm}`
+      : `SHOOT_${seasonPrefix}${yr}_${dd}.${mm}`;
+
+    setState(s => ({
+      ...s,
+      step: 2,
+      brand,
+      gender,
+      productType: pt,
+      sessionName: sName,
+    }));
+    setStep2Selected(new Set(productIds));
+  };
+
+  const handleSkipSuggestions = () => {
+    setState(s => ({ ...s, step: 1 }));
+  };
+
   return (
     <Layout>
       <div className="max-w-3xl mx-auto space-y-6">
+        {state.step === "suggest" && (
+          <StepSuggestion
+            sessions={todaySessions}
+            onUseSuggestion={handleUseSuggestion}
+            onSkip={handleSkipSuggestions}
+          />
+        )}
+
         {state.step === 1 && (
           <Step1
             state={state}
@@ -1019,6 +1105,107 @@ function Step3({ state, products, onUpdateProduct, onCopy, onEnd, onAddMore, onC
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function SuggestionCard({ session, onUse }: { session: any; onUse: () => void }) {
+  const brandParts = parseMulti(session.brand);
+  const shotParts = parseMulti(session.shotType);
+  const [products, setProducts] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    api.getSessionProducts(session.id).then(p => { setProducts(p); setLoading(false); });
+  }, [session.id]);
+
+  return (
+    <div className="bg-card border rounded-lg overflow-hidden">
+      <div className="p-5 space-y-4">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold">{session.modelName}</h2>
+          <p className="text-xs text-muted-foreground">Booked for today</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <span className="text-muted-foreground">Brand</span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {brandParts.map(b => (
+                <Badge key={b} variant="secondary" className="text-xs">{b}</Badge>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Shot Type</span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {shotParts.map(s => (
+                <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {!loading && products.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Products</span>
+              <span className="text-xs font-medium text-emerald-400">{products.length} products</span>
+            </div>
+            <div className="max-h-32 overflow-y-auto border rounded-md p-2 bg-background space-y-1">
+              {products.map((p: any) => (
+                <div key={p.id} className="flex items-center gap-2 text-xs py-0.5">
+                  <span className="font-medium truncate flex-1">{p.shortname}</span>
+                  {p.keyCode && <span className="text-muted-foreground">{p.keyCode}</span>}
+                  {p.colour && <span className="text-muted-foreground">{p.colour}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {session.notes && (
+          <div>
+            <span className="text-xs text-muted-foreground">Notes</span>
+            <p className="text-xs mt-0.5">{session.notes}</p>
+          </div>
+        )}
+
+        <Button onClick={onUse} className="w-full" size="sm">
+          <Camera className="w-4 h-4 mr-1" />
+          Create session based on this suggestion
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function StepSuggestion({ sessions, onUseSuggestion, onSkip }: {
+  sessions: any[];
+  onUseSuggestion: (session: any) => void;
+  onSkip: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <div className="flex items-center justify-center gap-2">
+          <Camera className="w-8 h-8 text-primary" />
+          <h1 className="text-3xl font-bold">Shooting Mode</h1>
+        </div>
+        <p className="text-muted-foreground">You have {sessions.length === 1 ? "a shoot" : `${sessions.length} shoots`} planned for today</p>
+      </div>
+
+      <div className="space-y-3">
+        {sessions.map((s: any) => (
+          <SuggestionCard key={s.id} session={s} onUse={() => onUseSuggestion(s)} />
+        ))}
+      </div>
+
+      <div className="text-center">
+        <Button variant="outline" onClick={onSkip} size="sm">
+          I want to do it my own way
+        </Button>
       </div>
     </div>
   );
