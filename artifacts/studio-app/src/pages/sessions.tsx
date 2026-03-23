@@ -153,10 +153,10 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
   }, [filteredByGender, productTypes]);
 
   const resetFrom = (step: number) => {
-    if (step <= 1) { setBrands([]); setGenders([]); setProductTypes([]); setSelectedProductIds(new Set()); }
-    else if (step <= 2) { setGenders([]); setProductTypes([]); setSelectedProductIds(new Set()); }
-    else if (step <= 3) { setProductTypes([]); setSelectedProductIds(new Set()); }
-    else if (step <= 4) { setSelectedProductIds(new Set()); }
+    if (step <= 1) { setBrands([]); setGenders([]); setProductTypes([]); setSelectedProductIds(new Set()); setExpandedModels(new Set()); }
+    else if (step <= 2) { setGenders([]); setProductTypes([]); setSelectedProductIds(new Set()); setExpandedModels(new Set()); }
+    else if (step <= 3) { setProductTypes([]); setSelectedProductIds(new Set()); setExpandedModels(new Set()); }
+    else if (step <= 4) { setSelectedProductIds(new Set()); setExpandedModels(new Set()); }
   };
 
   const toggleProduct = (id: number) => {
@@ -169,6 +169,56 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
 
   const selectAll = () => setSelectedProductIds(new Set(filteredProducts.map(p => p.id)));
   const deselectAll = () => setSelectedProductIds(new Set());
+
+  const [expandedModels, setExpandedModels] = React.useState<Set<string>>(new Set());
+
+  const modelGroups = React.useMemo(() => {
+    const groups: Record<string, WizardProduct[]> = {};
+    for (const p of filteredProducts) {
+      const key = p.shortname;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(p);
+    }
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [filteredProducts]);
+
+  const selectedModels = React.useMemo(() => {
+    const full: string[] = [];
+    const partial: string[] = [];
+    for (const [model, products] of modelGroups) {
+      const count = products.filter(p => selectedProductIds.has(p.id)).length;
+      if (count === products.length) full.push(model);
+      else if (count > 0) partial.push(model);
+    }
+    return { full, partial, any: [...full, ...partial] };
+  }, [modelGroups, selectedProductIds]);
+
+  const toggleModel = (model: string, products: WizardProduct[]) => {
+    setSelectedProductIds(prev => {
+      const next = new Set(prev);
+      const allSelected = products.every(p => next.has(p.id));
+      if (allSelected) {
+        products.forEach(p => next.delete(p.id));
+      } else {
+        products.forEach(p => next.add(p.id));
+      }
+      return next;
+    });
+  };
+
+  const selectAllModels = () => setSelectedProductIds(new Set(filteredProducts.map(p => p.id)));
+  const clearAllModels = () => { setSelectedProductIds(new Set()); setExpandedModels(new Set()); setShowAllModels(false); };
+
+  const hasAnyModelSelected = selectedModels.any.length > 0;
+  const [showAllModels, setShowAllModels] = React.useState(false);
+
+  const toggleExpandModel = (model: string) => {
+    setExpandedModels(prev => {
+      const next = new Set(prev);
+      if (next.has(model)) next.delete(model); else next.add(model);
+      return next;
+    });
+  };
 
   const createMut = useMutation({
     mutationFn: (data: any) => api.createSession(data),
@@ -300,45 +350,109 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
           stepNum={4}
           title="Products"
           done={step4Done}
-          summary={step4Done ? `${selectedProductIds.size} selected` : ""}
+          summary={step4Done ? `${selectedModels.any.length} model${selectedModels.any.length !== 1 ? "s" : ""}, ${selectedProductIds.size} products selected` : ""}
           expanded={expandedStep === 4 || (step3Done && !step4Done)}
           onToggle={() => setExpandedStep(expandedStep === 4 ? null : 4)}
-          onReset={() => { resetFrom(4); setExpandedStep(null); }}
+          onReset={() => { resetFrom(4); setExpandedModels(new Set()); setExpandedStep(null); }}
         >
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{filteredProducts.length} products available</span>
+              <span className="text-xs text-muted-foreground">{modelGroups.length} models, {filteredProducts.length} products</span>
               <div className="flex gap-2">
-                <button type="button" className="text-xs text-emerald-400 hover:underline" onClick={selectAll}>Select All</button>
-                <button type="button" className="text-xs text-muted-foreground hover:underline" onClick={deselectAll}>Clear</button>
+                <button type="button" className="text-xs text-emerald-400 hover:underline" onClick={selectAllModels}>Select All</button>
+                {selectedProductIds.size > 0 && (
+                  <button type="button" className="text-xs text-muted-foreground hover:underline" onClick={clearAllModels}>Clear</button>
+                )}
               </div>
             </div>
-            <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2 bg-background">
-              {filteredProducts.map(p => {
-                const checked = selectedProductIds.has(p.id);
+
+            <div className="flex flex-wrap gap-2">
+              {modelGroups.map(([model, products]) => {
+                const isFull = selectedModels.full.includes(model);
+                const isPartial = selectedModels.partial.includes(model);
+                const isSelected = isFull || isPartial;
+                if (hasAnyModelSelected && !isSelected && !showAllModels) return null;
+                const selectedCount = products.filter(p => selectedProductIds.has(p.id)).length;
                 return (
-                  <label
-                    key={p.id}
-                    className={cn(
-                      "flex items-center gap-2 p-1.5 rounded cursor-pointer text-xs transition-colors",
-                      checked ? "bg-emerald-900/20" : "hover:bg-secondary"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-4 h-4 rounded border flex items-center justify-center shrink-0",
-                      checked ? "bg-emerald-600 border-emerald-600" : "border-border"
-                    )}>
-                      {checked && <Check className="w-3 h-3 text-white" />}
-                    </div>
-                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleProduct(p.id)} />
-                    <span className="font-medium truncate flex-1">{p.shortname}</span>
-                    {p.keyCode && <span className="text-muted-foreground">{p.keyCode}</span>}
-                    {p.colour && <span className="text-muted-foreground">{p.colour}</span>}
-                    <Badge variant="secondary" className="text-[10px] px-1.5">{STATUS_LABELS[p.uploadStatus] || p.uploadStatus}</Badge>
-                  </label>
+                  <div key={model} className="flex flex-col">
+                    <ToggleChip
+                      label={`${model} (${isPartial ? `${selectedCount}/` : ""}${products.length})`}
+                      selected={isFull}
+                      onClick={() => toggleModel(model, products)}
+                    />
+                  </div>
                 );
               })}
             </div>
+
+            {hasAnyModelSelected && !showAllModels && modelGroups.length > selectedModels.any.length && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                onClick={() => setShowAllModels(true)}
+              >
+                Show all models
+              </button>
+            )}
+
+            {showAllModels && hasAnyModelSelected && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                onClick={() => setShowAllModels(false)}
+              >
+                Hide unselected
+              </button>
+            )}
+
+            {selectedModels.any.length > 0 && (
+              <div className="space-y-1">
+                {selectedModels.any.map(model => {
+                  const products = modelGroups.find(([m]) => m === model)?.[1] || [];
+                  const isExpanded = expandedModels.has(model);
+                  return (
+                    <div key={model} className="border rounded-md bg-background overflow-hidden">
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-secondary/50 transition-colors"
+                        onClick={() => toggleExpandModel(model)}
+                      >
+                        <span className="font-medium">{model} <span className="text-muted-foreground">({products.length})</span></span>
+                        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
+                      </button>
+                      {isExpanded && (
+                        <div className="border-t px-2 py-1 space-y-0.5 max-h-40 overflow-y-auto">
+                          {products.map(p => {
+                            const checked = selectedProductIds.has(p.id);
+                            return (
+                              <label
+                                key={p.id}
+                                className={cn(
+                                  "flex items-center gap-2 p-1.5 rounded cursor-pointer text-xs transition-colors",
+                                  checked ? "bg-emerald-900/20" : "hover:bg-secondary"
+                                )}
+                              >
+                                <div className={cn(
+                                  "w-4 h-4 rounded border flex items-center justify-center shrink-0",
+                                  checked ? "bg-emerald-600 border-emerald-600" : "border-border"
+                                )}>
+                                  {checked && <Check className="w-3 h-3 text-white" />}
+                                </div>
+                                <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleProduct(p.id)} />
+                                <span className="truncate flex-1">{p.colour || p.keyCode || "—"}</span>
+                                {p.keyCode && p.colour && <span className="text-muted-foreground">{p.keyCode}</span>}
+                                <Badge variant="secondary" className="text-[10px] px-1.5">{STATUS_LABELS[p.uploadStatus] || p.uploadStatus}</Badge>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {selectedProductIds.size > 0 && (
               <p className="text-xs font-medium text-emerald-400">{selectedProductIds.size} product{selectedProductIds.size !== 1 ? "s" : ""} selected</p>
             )}
