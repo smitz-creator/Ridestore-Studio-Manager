@@ -64,8 +64,8 @@ export default function Sessions() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const upcoming = sessions?.filter((s: any) => new Date(s.date + "T00:00:00") >= today) || [];
-  const past = sessions?.filter((s: any) => new Date(s.date + "T00:00:00") < today) || [];
+  const upcoming = sessions?.filter((s: any) => new Date(s.date) >= today) || [];
+  const past = sessions?.filter((s: any) => new Date(s.date) < today) || [];
 
   return (
     <Layout>
