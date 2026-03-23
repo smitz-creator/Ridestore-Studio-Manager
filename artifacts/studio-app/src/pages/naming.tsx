@@ -183,6 +183,7 @@ export default function Naming() {
             <CheckCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p className="text-lg font-medium">All caught up!</p>
             <p className="text-sm">No products waiting for naming.</p>
+            <p className="text-xs text-muted-foreground/60 mt-4">🔧 AI Vision for automated naming — under construction</p>
           </div>
         )}
 
