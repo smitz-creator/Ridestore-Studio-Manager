@@ -352,7 +352,11 @@ export default function Planner() {
                 )}
 
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[700px] text-xs">
+                  <table className="w-full min-w-[700px] text-xs table-fixed">
+                    <colgroup>
+                      <col className="w-20" />
+                      <col /><col /><col /><col /><col />
+                    </colgroup>
                     <thead>
                       <tr className="border-b bg-muted/20">
                         <th className="w-20 px-3 py-1.5 text-left font-semibold text-muted-foreground"></th>
@@ -381,7 +385,7 @@ export default function Planner() {
                             return (
                               <td
                                 key={dayIdx}
-                                className="px-1 py-1 align-top border-l min-w-[120px] group cursor-pointer hover:bg-muted/20 transition-colors"
+                                className="px-1 py-1 align-top border-l group cursor-pointer hover:bg-muted/20 transition-colors overflow-hidden"
                                 onClick={(e) => {
                                   if ((e.target as HTMLElement).closest("[data-block]")) return;
                                   openAdd(weekNum, dayIdx, row);
