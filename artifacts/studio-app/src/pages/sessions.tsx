@@ -51,7 +51,14 @@ export default function Sessions() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.date || !form.modelName.trim()) return;
+    if (!form.date) {
+      toast({ title: "Date is required", variant: "destructive" });
+      return;
+    }
+    if (!form.modelName.trim()) {
+      toast({ title: "Model Name is required", variant: "destructive" });
+      return;
+    }
     createMut.mutate({ ...form, createdById: user?.id });
   };
 
