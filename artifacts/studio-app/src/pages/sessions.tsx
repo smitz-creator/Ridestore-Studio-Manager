@@ -62,9 +62,10 @@ export default function Sessions() {
     createMut.mutate({ ...form, createdById: user?.id });
   };
 
-  const now = new Date();
-  const upcoming = sessions?.filter((s: any) => new Date(s.date) >= now) || [];
-  const past = sessions?.filter((s: any) => new Date(s.date) < now) || [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcoming = sessions?.filter((s: any) => new Date(s.date + "T00:00:00") >= today) || [];
+  const past = sessions?.filter((s: any) => new Date(s.date + "T00:00:00") < today) || [];
 
   return (
     <Layout>
