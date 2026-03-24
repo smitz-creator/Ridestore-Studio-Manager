@@ -103,4 +103,6 @@ export const api = {
     fetchJson("/storage/uploads/request-url", { method: "POST", body: JSON.stringify(data) }),
   autoPopulateShots: (productIds: number[]) =>
     fetchJson("/pre-production/auto-populate-shots", { method: "POST", body: JSON.stringify({ productIds }) }),
+  resolveKeyCodes: (keyCodes: string[]) =>
+    fetchJson("/pre-production/resolve-keycodes", { method: "POST", body: JSON.stringify({ keyCodes }) }),
 };

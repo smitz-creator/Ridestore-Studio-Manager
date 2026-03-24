@@ -110,16 +110,24 @@ export default function PreProduction() {
     const matchedProductIds = new Set<number>();
     const unmatchedKeyCodes = new Set<string>();
 
-    for (const { file, keyCode, imageType } of fileEntries) {
-      const product = (products as any[]).find((p: any) =>
-        p.keyCode && p.keyCode.toLowerCase() === keyCode.toLowerCase()
-      );
+    const allKeyCodes = [...new Set(fileEntries.map(f => f.keyCode))];
+    let resolvedProducts: Record<string, number> = {};
+    try {
+      resolvedProducts = await api.resolveKeyCodes(allKeyCodes);
+      console.log(`[PreProd] Resolved products:`, resolvedProducts);
+    } catch (err) {
+      console.error("Failed to resolve key codes", err);
+    }
 
-      if (!product) {
+    for (const { file, keyCode, imageType } of fileEntries) {
+      const productId = resolvedProducts[keyCode.toLowerCase()];
+
+      if (!productId) {
         unmatched++;
         unmatchedKeyCodes.add(keyCode);
         continue;
       }
+      const product = { id: productId };
 
       try {
         const { uploadURL, objectPath } = await api.requestUploadUrl({

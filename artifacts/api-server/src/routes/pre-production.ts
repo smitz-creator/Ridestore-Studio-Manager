@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray, or } from "drizzle-orm";
+import { eq, inArray, or, and } from "drizzle-orm";
 import { db, productsTable, preProductionImagesTable, projectsTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -144,6 +144,44 @@ function getBrandShort(brand: string): string {
   const key = brand.toLowerCase();
   return BRAND_MAP[key] || brand.toUpperCase().replace(/\s+/g, "");
 }
+
+router.post("/pre-production/resolve-keycodes", async (req, res): Promise<void> => {
+  const { keyCodes } = req.body;
+  if (!keyCodes || !Array.isArray(keyCodes) || keyCodes.length === 0) {
+    res.status(400).json({ error: "Missing keyCodes array" });
+    return;
+  }
+
+  const allProducts = await db
+    .select({ id: productsTable.id, keyCode: productsTable.keyCode })
+    .from(productsTable);
+
+  const result: Record<string, number> = {};
+  const toMarkCarryOver: number[] = [];
+
+  for (const kc of keyCodes) {
+    const product = allProducts.find(p =>
+      p.keyCode && p.keyCode.toLowerCase() === kc.toLowerCase()
+    );
+    if (product) {
+      result[kc.toLowerCase()] = product.id;
+      toMarkCarryOver.push(product.id);
+    }
+  }
+
+  if (toMarkCarryOver.length > 0) {
+    await db.update(productsTable)
+      .set({ isCarryOver: true, preProductionStatus: "pending" })
+      .where(
+        and(
+          inArray(productsTable.id, toMarkCarryOver),
+          eq(productsTable.isCarryOver, false)
+        )
+      );
+  }
+
+  res.json(result);
+});
 
 router.post("/pre-production/auto-populate-shots", async (req, res): Promise<void> => {
   const { productIds } = req.body;
