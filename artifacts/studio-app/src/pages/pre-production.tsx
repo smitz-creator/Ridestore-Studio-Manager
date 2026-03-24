@@ -560,14 +560,15 @@ function GalleryModal({ product, onClose, onOpenLightbox }: {
           {galleryImages.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Gallery Shots</h3>
-              <div className="columns-3 sm:columns-4 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {galleryImages.map((img: any, idx: number) => (
                   <button
                     key={img.id}
                     onClick={() => onOpenLightbox(allUrls, idx)}
-                    className="mb-2 block w-full rounded-md overflow-hidden border hover:ring-2 hover:ring-primary transition-all"
+                    className="rounded-md overflow-hidden border hover:ring-2 hover:ring-primary transition-all bg-[hsl(0_0%_10%)]"
+                    style={{ aspectRatio: "85 / 100" }}
                   >
-                    <img src={ImageUrl(img.objectPath)} alt={img.fileName} className="w-full h-auto" />
+                    <img src={ImageUrl(img.objectPath)} alt={img.fileName} className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>
@@ -577,14 +578,15 @@ function GalleryModal({ product, onClose, onOpenLightbox }: {
           {detailImages.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Detail Shots</h3>
-              <div className="columns-3 sm:columns-4 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {detailImages.map((img: any, idx: number) => (
                   <button
                     key={img.id}
                     onClick={() => onOpenLightbox(allUrls, galleryImages.length + idx)}
-                    className="mb-2 block w-full rounded-md overflow-hidden border hover:ring-2 hover:ring-primary transition-all"
+                    className="rounded-md overflow-hidden border hover:ring-2 hover:ring-primary transition-all bg-[hsl(0_0%_10%)]"
+                    style={{ aspectRatio: "85 / 100" }}
                   >
-                    <img src={ImageUrl(img.objectPath)} alt={img.fileName} className="w-full h-auto" />
+                    <img src={ImageUrl(img.objectPath)} alt={img.fileName} className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>

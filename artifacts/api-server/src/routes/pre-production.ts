@@ -70,6 +70,22 @@ router.post("/pre-production/images", async (req, res): Promise<void> => {
     return;
   }
 
+  const existing = await db
+    .select({ id: preProductionImagesTable.id })
+    .from(preProductionImagesTable)
+    .where(
+      and(
+        eq(preProductionImagesTable.productId, productId),
+        eq(preProductionImagesTable.fileName, fileName)
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    res.json({ id: existing[0].id, skipped: true });
+    return;
+  }
+
   const [image] = await db.insert(preProductionImagesTable).values({
     productId,
     objectPath,
