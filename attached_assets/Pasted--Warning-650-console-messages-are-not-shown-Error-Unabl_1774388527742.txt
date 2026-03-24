@@ -1,0 +1,205 @@
+[Warning] 650 console messages are not shown.
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Debug] [vite] connected. (injected.js, line 37)
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] WebSocket connection to 'wss://f28a0aa4-e37b-4b48-aab5-99497adc0c12-00-1g9q28wbatvf6.kirk.replit.dev/?token=HGQl2L3OV367' failed: The operation couldn’t be completed. Socket is not connected
+[Log] [vite] server connection lost. Polling for restart... (injected.js, line 37)
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation', 'allow-presentation', 'allow-orientation-lock' are invalid sandbox flags.
+	C (9954129c7dd6dc22.js:2:7241)
+	(anonymous function) (9954129c7dd6dc22.js:2:106339)
+	oO (9954129c7dd6dc22.js:2:110002)
+	oD (9954129c7dd6dc22.js:2:102955)
+	oR (9954129c7dd6dc22.js:2:102765)
+	oS (9954129c7dd6dc22.js:2:97838)
+	E (9954129c7dd6dc22.js:2:1494)
+	L (9954129c7dd6dc22.js:2:2015)
+[Error] The source list for Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+[Error] The Content Security Policy directive 'default-src' contains 'report-uri' as a source expression. Did you mean 'default-src ...; report-uri...' (note the semicolon)?
+[Error] The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+[Error] Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation', 'allow-presentation', 'allow-orientation-lock' are invalid sandbox flags. (workspace_iframe.html, line 32)
+[Info] Successfully preconnected to https://fonts.googleapis.com/
+[Info] Successfully preconnected to https://fonts.gstatic.com/
+[Debug] [vite] connecting... (injected.js, line 37)
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Debug] [vite] connected. (injected.js, line 37)
+[Error] Unable to post message to https://staging.replit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://replit-staging.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://staging.firewalledreplit.com. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to http://localhost:3000. Recipient has origin https://replit.com.
+
+[Error] Unable to post message to https://rp-humain.com. Recipient has origin https://replit.com.
+
+[Log] stallwart: failed ping 1 (stallwart.build.js, line 1, x2)
+[Log] stallwart: failed ping 2 (stallwart.build.js, line 1)
+[Log] stallwart: failed ping 1 (stallwart.build.js, line 1)
+[Log] stallwart: failed ping 2 (stallwart.build.js, line 1)
+[Log] stallwart: failed ping 3 (stallwart.build.js, line 1)
+[Log] stallwart: failed ping 4 (stallwart.build.js, line 1)
+[Log] stallwart: failed ping 5 (stallwart.build.js, line 1)
+[Error] Source Map loading errors (x16)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (fe59c9ba68392b06.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (acfb85174e88d54a.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (3f4a33c9fa7b6e65.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (cb5d58668a167420.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (46fa9127763c0734.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (b83fa6f9a073faa3.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (901874861016865f.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (0849d087833cb5cf.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (d542f4827fa1d75d.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (e9bae4946d1041d0.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (cb31349c7b97618b.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (16d01113db1338d2.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (d4a1ed90437b6bfb.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (d4c7c588047b2766.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 (Not Found) (faba189e2a5f651c.css.map, line 0)
+[Error] Failed to load resource: the server responded with a status of 404 () (adora-start.temp.js.map, line 0)

@@ -75,6 +75,8 @@ export default function PreProduction() {
     });
   }, [products, brandFilter, genderFilter, typeFilter]);
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const parseFolderName = (folderName: string): { keyCode: string; imageType: "gallery" | "detail" } => {
     const lower = folderName.toLowerCase();
     if (lower.includes("details")) {
@@ -84,10 +86,135 @@ export default function PreProduction() {
     return { keyCode: folderName.trim(), imageType: "gallery" };
   };
 
-  const isJpeg = (file: File) =>
-    file.type === "image/jpeg" ||
-    file.name.toLowerCase().endsWith(".jpg") ||
-    file.name.toLowerCase().endsWith(".jpeg");
+  const isJpeg = (name: string) => {
+    const lower = name.toLowerCase();
+    return lower.endsWith(".jpg") || lower.endsWith(".jpeg");
+  };
+
+  const processFiles = async (fileEntries: { file: File; keyCode: string; imageType: "gallery" | "detail" }[]) => {
+    if (!products) return;
+
+    console.log(`[PreProd] Processing ${fileEntries.length} JPG files`);
+    if (fileEntries.length > 0) {
+      const sample = fileEntries.slice(0, 5).map(f => `${f.keyCode} (${f.imageType}): ${f.file.name}`);
+      console.log(`[PreProd] Sample:`, sample);
+    }
+
+    const dbKeyCodes = (products as any[]).map((p: any) => p.keyCode).filter(Boolean);
+    console.log(`[PreProd] DB key codes (${dbKeyCodes.length}):`, dbKeyCodes.slice(0, 20));
+    const extractedKeyCodes = [...new Set(fileEntries.map(f => f.keyCode))];
+    console.log(`[PreProd] Extracted key codes:`, extractedKeyCodes);
+
+    let matched = 0;
+    let unmatched = 0;
+    const matchedProductIds = new Set<number>();
+    const unmatchedKeyCodes = new Set<string>();
+
+    for (const { file, keyCode, imageType } of fileEntries) {
+      const product = (products as any[]).find((p: any) =>
+        p.keyCode && p.keyCode.toLowerCase() === keyCode.toLowerCase()
+      );
+
+      if (!product) {
+        unmatched++;
+        unmatchedKeyCodes.add(keyCode);
+        continue;
+      }
+
+      try {
+        const { uploadURL, objectPath } = await api.requestUploadUrl({
+          name: file.name,
+          size: file.size,
+          contentType: file.type || "image/jpeg",
+        });
+
+        await fetch(uploadURL, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "image/jpeg" },
+          body: file,
+        });
+
+        await api.addPreProductionImage({
+          productId: product.id,
+          objectPath,
+          fileName: file.name,
+          imageType,
+        });
+
+        matched++;
+        matchedProductIds.add(product.id);
+      } catch (err) {
+        console.error("Upload error for", file.name, err);
+      }
+    }
+
+    if (matchedProductIds.size > 0) {
+      try {
+        await api.autoPopulateShots([...matchedProductIds]);
+      } catch (err) {
+        console.error("Auto-populate shots error", err);
+      }
+    }
+
+    if (unmatchedKeyCodes.size > 0) {
+      console.log(`[PreProd] Unmatched key codes:`, [...unmatchedKeyCodes]);
+    }
+    console.log(`[PreProd] Result: ${matched} matched, ${unmatched} unmatched, ${matchedProductIds.size} unique products`);
+
+    qc.invalidateQueries({ queryKey: ["pre-production-products"] });
+    toast({
+      title: `Upload complete: ${matched} images matched to ${matchedProductIds.size} products`,
+      description: unmatched > 0 ? `${unmatched} images unmatched (key codes: ${[...unmatchedKeyCodes].slice(0, 5).join(", ")}${unmatchedKeyCodes.size > 5 ? "..." : ""})` : undefined,
+    });
+  };
+
+  const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !products || uploading) return;
+    setUploading(true);
+
+    try {
+      const fileEntries: { file: File; keyCode: string; imageType: "gallery" | "detail" }[] = [];
+
+      console.log(`[PreProd] File input: ${files.length} files selected`);
+      if (files.length > 0) {
+        const samplePaths = Array.from(files).slice(0, 5).map(f => f.webkitRelativePath || f.name);
+        console.log(`[PreProd] Sample paths:`, samplePaths);
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!isJpeg(file.name)) continue;
+
+        const relPath = file.webkitRelativePath || file.name;
+        const parts = relPath.split("/");
+
+        let folderName: string;
+        if (parts.length >= 3) {
+          folderName = parts[1];
+        } else if (parts.length === 2) {
+          folderName = parts[0];
+        } else {
+          folderName = file.name.replace(/\.[^.]+$/, "").split(/[_\s]/)[0];
+        }
+
+        const { keyCode, imageType } = parseFolderName(folderName);
+        fileEntries.push({ file, keyCode, imageType });
+      }
+
+      if (fileEntries.length === 0) {
+        toast({ title: "No JPG images found in selected folders", variant: "destructive" });
+      } else {
+        await processFiles(fileEntries);
+      }
+    } catch (err) {
+      console.error("File input error", err);
+      toast({ title: "Upload failed", variant: "destructive" });
+    }
+
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -99,6 +226,10 @@ export default function PreProduction() {
     try {
       const items = e.dataTransfer.items;
       const fileEntries: { file: File; keyCode: string; imageType: "gallery" | "detail" }[] = [];
+
+      console.log(`[PreProd] Drop event: ${items.length} items, ${e.dataTransfer.files.length} files`);
+
+      let usedEntryAPI = false;
 
       const readDir = (dirEntry: FileSystemDirectoryEntry): Promise<FileSystemEntry[]> => {
         return new Promise((resolve) => {
@@ -125,7 +256,7 @@ export default function PreProduction() {
             const file = await new Promise<File>((resolve) => {
               (entry as FileSystemFileEntry).file(resolve);
             });
-            if (isJpeg(file)) {
+            if (isJpeg(file.name)) {
               fileEntries.push({ file, keyCode, imageType });
             }
           }
@@ -135,28 +266,27 @@ export default function PreProduction() {
       const topLevelPromises: Promise<void>[] = [];
 
       for (let i = 0; i < items.length; i++) {
-        const entry = items[i].webkitGetAsEntry();
+        const entry = items[i].webkitGetAsEntry?.();
         if (!entry) continue;
+        usedEntryAPI = true;
 
         if (entry.isDirectory) {
           const dirEntry = entry as FileSystemDirectoryEntry;
-          console.log(`[PreProd Upload] Dropped directory: "${dirEntry.name}"`);
+          console.log(`[PreProd] Dropped dir: "${dirEntry.name}"`);
           const subEntries = await readDir(dirEntry);
-
           const hasSubDirs = subEntries.some(e => e.isDirectory);
-          console.log(`[PreProd Upload] Contains ${subEntries.length} entries, ${hasSubDirs ? "has subdirectories" : "flat (no subdirs)"}`);
 
           if (hasSubDirs) {
             for (const sub of subEntries) {
               if (sub.isDirectory) {
                 const { keyCode, imageType } = parseFolderName(sub.name);
-                console.log(`[PreProd Upload] Subfolder: "${sub.name}" → keyCode="${keyCode}", type=${imageType}`);
+                console.log(`[PreProd] Sub: "${sub.name}" → key="${keyCode}" type=${imageType}`);
                 topLevelPromises.push(collectFromDir(sub as FileSystemDirectoryEntry, keyCode, imageType));
               }
             }
           } else {
             const { keyCode, imageType } = parseFolderName(dirEntry.name);
-            console.log(`[PreProd Upload] Direct folder: "${dirEntry.name}" → keyCode="${keyCode}", type=${imageType}`);
+            console.log(`[PreProd] Dir: "${dirEntry.name}" → key="${keyCode}" type=${imageType}`);
             topLevelPromises.push(collectFromDir(dirEntry, keyCode, imageType));
           }
         }
@@ -164,84 +294,31 @@ export default function PreProduction() {
 
       await Promise.all(topLevelPromises);
 
-      console.log(`[PreProd Upload] Collected ${fileEntries.length} JPG files total`);
-      if (fileEntries.length > 0) {
-        const sample = fileEntries.slice(0, 5).map(f => `${f.keyCode} (${f.imageType}): ${f.file.name}`);
-        console.log(`[PreProd Upload] Sample files:`, sample);
+      if (!usedEntryAPI && e.dataTransfer.files.length > 0) {
+        console.log(`[PreProd] webkitGetAsEntry unavailable, falling back to files`);
+        for (let i = 0; i < e.dataTransfer.files.length; i++) {
+          const file = e.dataTransfer.files[i];
+          if (!isJpeg(file.name)) continue;
+          const relPath = (file as any).webkitRelativePath || file.name;
+          const parts = relPath.split("/");
+          let folderName: string;
+          if (parts.length >= 3) {
+            folderName = parts[1];
+          } else if (parts.length === 2) {
+            folderName = parts[0];
+          } else {
+            folderName = file.name.replace(/\.[^.]+$/, "").split(/[_\s]/)[0];
+          }
+          const { keyCode, imageType } = parseFolderName(folderName);
+          fileEntries.push({ file, keyCode, imageType });
+        }
       }
 
       if (fileEntries.length === 0) {
-        toast({ title: "No JPG images found in dropped folders", variant: "destructive" });
-        setUploading(false);
-        return;
+        toast({ title: "No JPG images found. Try using the Browse button instead.", variant: "destructive" });
+      } else {
+        await processFiles(fileEntries);
       }
-
-      const dbKeyCodes = (products as any[]).map((p: any) => p.keyCode).filter(Boolean);
-      console.log(`[PreProd Upload] DB key codes (${dbKeyCodes.length}):`, dbKeyCodes.slice(0, 20));
-      const extractedKeyCodes = [...new Set(fileEntries.map(f => f.keyCode))];
-      console.log(`[PreProd Upload] Extracted key codes from folders:`, extractedKeyCodes);
-
-      let matched = 0;
-      let unmatched = 0;
-      const matchedProductIds = new Set<number>();
-      const unmatchedKeyCodes = new Set<string>();
-
-      for (const { file, keyCode, imageType } of fileEntries) {
-        const product = (products as any[]).find((p: any) =>
-          p.keyCode && p.keyCode.toLowerCase() === keyCode.toLowerCase()
-        );
-
-        if (!product) {
-          unmatched++;
-          unmatchedKeyCodes.add(keyCode);
-          continue;
-        }
-
-        try {
-          const { uploadURL, objectPath } = await api.requestUploadUrl({
-            name: file.name,
-            size: file.size,
-            contentType: file.type || "image/jpeg",
-          });
-
-          await fetch(uploadURL, {
-            method: "PUT",
-            headers: { "Content-Type": file.type || "image/jpeg" },
-            body: file,
-          });
-
-          await api.addPreProductionImage({
-            productId: product.id,
-            objectPath,
-            fileName: file.name,
-            imageType,
-          });
-
-          matched++;
-          matchedProductIds.add(product.id);
-        } catch (err) {
-          console.error("Upload error for", file.name, err);
-        }
-      }
-
-      if (matchedProductIds.size > 0) {
-        try {
-          await api.autoPopulateShots([...matchedProductIds]);
-        } catch (err) {
-          console.error("Auto-populate shots error", err);
-        }
-      }
-
-      if (unmatchedKeyCodes.size > 0) {
-        console.log(`[PreProd Upload] Unmatched key codes:`, [...unmatchedKeyCodes]);
-      }
-      console.log(`[PreProd Upload] Result: ${matched} matched, ${unmatched} unmatched, ${matchedProductIds.size} unique products`);
-
-      qc.invalidateQueries({ queryKey: ["pre-production-products"] });
-      toast({
-        title: `Upload complete: ${matched} images matched to ${matchedProductIds.size} products`,
-        description: unmatched > 0 ? `${unmatched} images unmatched (key codes: ${[...unmatchedKeyCodes].slice(0, 5).join(", ")}${unmatchedKeyCodes.size > 5 ? "..." : ""})` : undefined,
-      });
     } catch (err) {
       console.error("Drop error", err);
       toast({ title: "Upload failed", variant: "destructive" });
@@ -272,22 +349,30 @@ export default function PreProduction() {
           </span>
         </div>
 
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          {...({ webkitdirectory: "", directory: "", multiple: true } as any)}
+          onChange={handleFileInput}
+        />
         <div
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={handleDrop}
           className={cn(
-            "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+            "border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer",
             uploading ? "border-primary bg-primary/5" : "border-muted-foreground/30 hover:border-primary/50"
           )}
+          onClick={() => !uploading && fileInputRef.current?.click()}
         >
           <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
           {uploading ? (
             <p className="text-sm text-primary font-medium">Uploading images...</p>
           ) : (
             <>
-              <p className="text-sm font-medium">Drag & drop product folders here</p>
+              <p className="text-sm font-medium">Drag & drop product folders here or click to browse</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Drop a parent folder containing subfolders like H1892/ (gallery) and H1892 details/ (details). Images are matched by folder name.
+                Select or drop a folder containing subfolders like H1892/ (gallery) and H1892 details/ (details).
               </p>
             </>
           )}
