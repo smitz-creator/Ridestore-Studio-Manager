@@ -516,6 +516,9 @@ function BookingWizard({ editingSession, onClose }: { editingSession: any | null
               ? (isSubmitting ? "Saving..." : "Save Changes")
               : (isSubmitting ? "Booking..." : `Book Photo Shoot (${selectedProductIds.size} products)`)}
           </Button>
+          {!editingSession && (!modelName.trim() || shotTypes.length === 0) && step4Done && (
+            <p className="text-xs text-muted-foreground text-center">Select model and shot type</p>
+          )}
         </div>
       )}
     </div>
