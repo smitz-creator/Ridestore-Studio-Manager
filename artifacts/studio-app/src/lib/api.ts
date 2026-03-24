@@ -91,4 +91,14 @@ export const api = {
     }
     return res.json() as Promise<{ results: { sheetName: string; brand: string; projectName: string; imported: number; skipped: number }[] }>;
   },
+
+  getPreProductionProducts: () => fetchJson("/pre-production/products"),
+  addPreProductionImage: (data: { productId: number; objectPath: string; fileName: string; imageType?: string }) =>
+    fetchJson("/pre-production/images", { method: "POST", body: JSON.stringify(data) }),
+  deletePreProductionImage: (id: number) => fetchJson(`/pre-production/images/${id}`, { method: "DELETE" }),
+  reviewProduct: (productId: number, decision: "keep" | "reshoot") =>
+    fetchJson("/pre-production/review", { method: "POST", body: JSON.stringify({ productId, decision }) }),
+  finalizePreProduction: () => fetchJson("/pre-production/finalize", { method: "POST", body: JSON.stringify({}) }),
+  requestUploadUrl: (data: { name: string; size: number; contentType: string }) =>
+    fetchJson("/storage/uploads/request-url", { method: "POST", body: JSON.stringify(data) }),
 };

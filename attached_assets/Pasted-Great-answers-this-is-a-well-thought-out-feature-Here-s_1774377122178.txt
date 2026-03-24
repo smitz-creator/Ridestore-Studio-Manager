@@ -1,0 +1,41 @@
+Great answers — this is a well thought out feature. Here's the full prompt:
+
+---
+
+**Add "Pre Production" page — Carry Over review with image upload and gallery**
+
+Create a new page called **"Pre Production"** for reviewing carry over products from previous seasons before the new season starts.
+
+**Navigation:**
+- Place it second in the sidebar, right after Dashboard (before Projects)
+- Only visible to: Nordén, Philip, and Oskar
+
+**Core Flow:**
+
+1. **Image Upload**: Users drag and drop folders containing 2000px JPG images. Each folder should map to a product by its Key Code (SKU). The folder name should match or contain the Key Code so the app knows which product the images belong to.
+
+2. **Main View**: A grid/card layout showing all uploaded carry over products. Each card shows:
+   - The Key Code (SKU) prominently
+   - One preview thumbnail of the first gallery shot
+   - Two buttons below: **"Keep Carry Over"** and **"Reshoot"**
+
+3. **Filtering**: Filter bar at the top with Brand, Gender, and Product Type filters (same style as the Projects page filters).
+
+4. **Button Actions:**
+   - **"Keep Carry Over"**: Marks the product with the Carry Over tag (if it doesn't already have one). Product stays in the grid as "reviewed".
+   - **"Reshoot"**: Removes the Carry Over tag from the product, clears the Gallery Shots and Detail Shots fields, and resets Upload Status to "Not Started" — so it enters the pipeline fresh as a product that needs to be shot.
+
+5. **Image Preview / Gallery:**
+   - Clicking the preview thumbnail opens a gallery view showing all the gallery shots for that product
+   - Below the gallery shots section, show the detail shots for that product
+   - Clicking any image opens it in a **lightbox** — enlarged view with left/right arrows (or click left/right side of image) to navigate between photos
+   - Close lightbox with X button or clicking outside
+
+6. **Done Button:**
+   - At the bottom of the page, a **"Done"** button
+   - When pressed, show a confirmation dialog: **"Are you sure you are happy with this selection?"**
+   - On confirm, finalize the review (lock in all Keep Carry Over / Reshoot decisions)
+
+**Styling:** Match the existing dark mode design. Cards should use the same layered surface style as other pages. Preview thumbnails should be consistent size with the Key Code text above or below.
+
+---

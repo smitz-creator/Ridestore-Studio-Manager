@@ -16,6 +16,7 @@ import Retouch from "@/pages/retouch";
 import Naming from "@/pages/naming";
 import UploadTracker from "@/pages/upload";
 import Planner from "@/pages/planner";
+import PreProduction from "@/pages/pre-production";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ function AppRoutes() {
       <Route path="/upload" component={UploadTracker} />
       <Route path="/sessions" component={Sessions} />
       <Route path="/planner" component={Planner} />
+      <Route path="/pre-production" component={PreProduction} />
       <Route component={NotFound} />
     </Switch>
   );

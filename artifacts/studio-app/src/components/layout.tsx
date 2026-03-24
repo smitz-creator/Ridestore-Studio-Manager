@@ -16,6 +16,7 @@ import {
   FileText,
   Upload,
   CalendarDays,
+  FolderOpen,
 } from "lucide-react";
 
 interface NavItem {
@@ -24,7 +25,9 @@ interface NavItem {
   icon: React.ElementType;
 }
 
-const navItems: NavItem[] = [
+const PRE_PROD_USERS = ["Nordén", "Philip", "Oskar"];
+
+const baseNavItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/planner", label: "Planner", icon: CalendarDays },
@@ -36,6 +39,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  const navItems = React.useMemo(() => {
+    const items = [baseNavItems[0]];
+    if (user && PRE_PROD_USERS.includes(user.name)) {
+      items.push({ href: "/pre-production", label: "Pre Production", icon: FolderOpen });
+    }
+    items.push(...baseNavItems.slice(1));
+    return items;
+  }, [user]);
 
   React.useEffect(() => {
     setIsMobileMenuOpen(false);
