@@ -237,33 +237,57 @@ export default function PreProduction() {
 
       console.log(`[PreProd] Drop event: ${items.length} items, ${e.dataTransfer.files.length} files`);
 
-      let usedEntryAPI = false;
-
-      const readDir = (dirEntry: FileSystemDirectoryEntry): Promise<FileSystemEntry[]> => {
-        return new Promise((resolve) => {
+      const readAllEntries = (dirEntry: FileSystemDirectoryEntry): Promise<FileSystemEntry[]> => {
+        return new Promise((resolve, reject) => {
           const reader = dirEntry.createReader();
-          const allEntries: FileSystemEntry[] = [];
-          const readBatch = () => {
-            reader.readEntries((entries) => {
-              if (entries.length === 0) {
-                resolve(allEntries);
-              } else {
-                allEntries.push(...entries);
-                readBatch();
-              }
-            });
+          const all: FileSystemEntry[] = [];
+          const read = () => {
+            reader.readEntries((batch) => {
+              if (batch.length === 0) { resolve(all); return; }
+              all.push(...batch);
+              read();
+            }, reject);
           };
-          readBatch();
+          read();
         });
       };
 
-      const collectFromDir = async (dirEntry: FileSystemDirectoryEntry, keyCode: string, imageType: "gallery" | "detail") => {
-        const entries = await readDir(dirEntry);
-        for (const entry of entries) {
+      const getFile = (entry: FileSystemFileEntry): Promise<File> =>
+        new Promise((resolve, reject) => entry.file(resolve, reject));
+
+      const collectAll = async (dirEntry: FileSystemDirectoryEntry, keyCode: string, imageType: "gallery" | "detail") => {
+        const entries = await readAllEntries(dirEntry);
+        const promises = entries.map(async (entry) => {
           if (entry.isFile) {
-            const file = await new Promise<File>((resolve) => {
-              (entry as FileSystemFileEntry).file(resolve);
-            });
+            const file = await getFile(entry as FileSystemFileEntry);
+            if (isJpeg(file.name)) {
+              fileEntries.push({ file, keyCode, imageType });
+            }
+          } else if (entry.isDirectory) {
+            await collectAll(entry as FileSystemDirectoryEntry, keyCode, imageType);
+          }
+        });
+        await Promise.all(promises);
+      };
+
+      const processTopLevel = async (dirEntry: FileSystemDirectoryEntry) => {
+        const entries = await readAllEntries(dirEntry);
+        const subDirs = entries.filter(e => e.isDirectory);
+        const subFiles = entries.filter(e => e.isFile);
+
+        if (subDirs.length > 0) {
+          console.log(`[PreProd] Parent folder "${dirEntry.name}": ${subDirs.length} subfolders, ${subFiles.length} loose files`);
+          const promises = subDirs.map(async (sub) => {
+            const { keyCode, imageType } = parseFolderName(sub.name);
+            console.log(`[PreProd]   → "${sub.name}" → key="${keyCode}" type=${imageType}`);
+            await collectAll(sub as FileSystemDirectoryEntry, keyCode, imageType);
+          });
+          await Promise.all(promises);
+        } else {
+          const { keyCode, imageType } = parseFolderName(dirEntry.name);
+          console.log(`[PreProd] Flat folder "${dirEntry.name}" → key="${keyCode}" type=${imageType}`);
+          for (const entry of subFiles) {
+            const file = await getFile(entry as FileSystemFileEntry);
             if (isJpeg(file.name)) {
               fileEntries.push({ file, keyCode, imageType });
             }
@@ -271,59 +295,37 @@ export default function PreProduction() {
         }
       };
 
-      const topLevelPromises: Promise<void>[] = [];
-
+      let usedEntryAPI = false;
       for (let i = 0; i < items.length; i++) {
         const entry = items[i].webkitGetAsEntry?.();
         if (!entry) continue;
         usedEntryAPI = true;
-
         if (entry.isDirectory) {
-          const dirEntry = entry as FileSystemDirectoryEntry;
-          console.log(`[PreProd] Dropped dir: "${dirEntry.name}"`);
-          const subEntries = await readDir(dirEntry);
-          const hasSubDirs = subEntries.some(e => e.isDirectory);
-
-          if (hasSubDirs) {
-            for (const sub of subEntries) {
-              if (sub.isDirectory) {
-                const { keyCode, imageType } = parseFolderName(sub.name);
-                console.log(`[PreProd] Sub: "${sub.name}" → key="${keyCode}" type=${imageType}`);
-                topLevelPromises.push(collectFromDir(sub as FileSystemDirectoryEntry, keyCode, imageType));
-              }
-            }
-          } else {
-            const { keyCode, imageType } = parseFolderName(dirEntry.name);
-            console.log(`[PreProd] Dir: "${dirEntry.name}" → key="${keyCode}" type=${imageType}`);
-            topLevelPromises.push(collectFromDir(dirEntry, keyCode, imageType));
-          }
+          await processTopLevel(entry as FileSystemDirectoryEntry);
         }
       }
 
-      await Promise.all(topLevelPromises);
-
       if (!usedEntryAPI && e.dataTransfer.files.length > 0) {
-        console.log(`[PreProd] webkitGetAsEntry unavailable, falling back to files`);
+        console.log(`[PreProd] webkitGetAsEntry unavailable, using file list (${e.dataTransfer.files.length} files)`);
         for (let i = 0; i < e.dataTransfer.files.length; i++) {
           const file = e.dataTransfer.files[i];
           if (!isJpeg(file.name)) continue;
           const relPath = (file as any).webkitRelativePath || file.name;
           const parts = relPath.split("/");
           let folderName: string;
-          if (parts.length >= 3) {
-            folderName = parts[1];
-          } else if (parts.length === 2) {
-            folderName = parts[0];
-          } else {
-            folderName = file.name.replace(/\.[^.]+$/, "").split(/[_\s]/)[0];
-          }
+          if (parts.length >= 3) folderName = parts[1];
+          else if (parts.length === 2) folderName = parts[0];
+          else folderName = file.name.replace(/\.[^.]+$/, "").split(/[_\s]/)[0];
           const { keyCode, imageType } = parseFolderName(folderName);
           fileEntries.push({ file, keyCode, imageType });
         }
       }
 
+      const folderSummary = [...new Set(fileEntries.map(f => `${f.keyCode}(${f.imageType})`))];
+      console.log(`[PreProd] Total: ${fileEntries.length} files from ${folderSummary.length} folders: ${folderSummary.join(", ")}`);
+
       if (fileEntries.length === 0) {
-        toast({ title: "No JPG images found. Try using the Browse button instead.", variant: "destructive" });
+        toast({ title: "No JPG images found. Try clicking to browse instead.", variant: "destructive" });
       } else {
         await processFiles(fileEntries);
       }
