@@ -140,19 +140,23 @@ export default function PreProduction() {
 
         if (entry.isDirectory) {
           const dirEntry = entry as FileSystemDirectoryEntry;
+          console.log(`[PreProd Upload] Dropped directory: "${dirEntry.name}"`);
           const subEntries = await readDir(dirEntry);
 
           const hasSubDirs = subEntries.some(e => e.isDirectory);
+          console.log(`[PreProd Upload] Contains ${subEntries.length} entries, ${hasSubDirs ? "has subdirectories" : "flat (no subdirs)"}`);
 
           if (hasSubDirs) {
             for (const sub of subEntries) {
               if (sub.isDirectory) {
                 const { keyCode, imageType } = parseFolderName(sub.name);
+                console.log(`[PreProd Upload] Subfolder: "${sub.name}" → keyCode="${keyCode}", type=${imageType}`);
                 topLevelPromises.push(collectFromDir(sub as FileSystemDirectoryEntry, keyCode, imageType));
               }
             }
           } else {
             const { keyCode, imageType } = parseFolderName(dirEntry.name);
+            console.log(`[PreProd Upload] Direct folder: "${dirEntry.name}" → keyCode="${keyCode}", type=${imageType}`);
             topLevelPromises.push(collectFromDir(dirEntry, keyCode, imageType));
           }
         }
@@ -160,15 +164,27 @@ export default function PreProduction() {
 
       await Promise.all(topLevelPromises);
 
+      console.log(`[PreProd Upload] Collected ${fileEntries.length} JPG files total`);
+      if (fileEntries.length > 0) {
+        const sample = fileEntries.slice(0, 5).map(f => `${f.keyCode} (${f.imageType}): ${f.file.name}`);
+        console.log(`[PreProd Upload] Sample files:`, sample);
+      }
+
       if (fileEntries.length === 0) {
         toast({ title: "No JPG images found in dropped folders", variant: "destructive" });
         setUploading(false);
         return;
       }
 
+      const dbKeyCodes = (products as any[]).map((p: any) => p.keyCode).filter(Boolean);
+      console.log(`[PreProd Upload] DB key codes (${dbKeyCodes.length}):`, dbKeyCodes.slice(0, 20));
+      const extractedKeyCodes = [...new Set(fileEntries.map(f => f.keyCode))];
+      console.log(`[PreProd Upload] Extracted key codes from folders:`, extractedKeyCodes);
+
       let matched = 0;
       let unmatched = 0;
       const matchedProductIds = new Set<number>();
+      const unmatchedKeyCodes = new Set<string>();
 
       for (const { file, keyCode, imageType } of fileEntries) {
         const product = (products as any[]).find((p: any) =>
@@ -177,6 +193,7 @@ export default function PreProduction() {
 
         if (!product) {
           unmatched++;
+          unmatchedKeyCodes.add(keyCode);
           continue;
         }
 
@@ -215,10 +232,15 @@ export default function PreProduction() {
         }
       }
 
+      if (unmatchedKeyCodes.size > 0) {
+        console.log(`[PreProd Upload] Unmatched key codes:`, [...unmatchedKeyCodes]);
+      }
+      console.log(`[PreProd Upload] Result: ${matched} matched, ${unmatched} unmatched, ${matchedProductIds.size} unique products`);
+
       qc.invalidateQueries({ queryKey: ["pre-production-products"] });
       toast({
-        title: `Upload complete: ${matched} images matched`,
-        description: unmatched > 0 ? `${unmatched} images could not be matched to a product` : undefined,
+        title: `Upload complete: ${matched} images matched to ${matchedProductIds.size} products`,
+        description: unmatched > 0 ? `${unmatched} images unmatched (key codes: ${[...unmatchedKeyCodes].slice(0, 5).join(", ")}${unmatchedKeyCodes.size > 5 ? "..." : ""})` : undefined,
       });
     } catch (err) {
       console.error("Drop error", err);

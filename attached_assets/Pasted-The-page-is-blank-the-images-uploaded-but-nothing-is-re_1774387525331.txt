@@ -1,0 +1,47 @@
+The page is blank — the images uploaded but nothing is rendering. The matching is probably still failing silently. Let me write a more diagnostic prompt to figure out exactly what's going wrong:
+
+---
+
+**Debug Pre Production image upload — still matching 0 products**
+
+The Pre Production page uploads images but matches nothing. We need to debug this step by step.
+
+**The folder structure being uploaded is:**
+```
+Parent folder/
+  H1892/          ← folder containing gallery JPGs like H1892_1624.jpg
+  H1892 details/  ← folder containing detail JPGs like H1892 details_151.jpg
+  H1893/
+  H1893 details/
+  H1894/
+  H1894 details/
+  ... etc
+```
+
+**Please add console.log debugging at each step:**
+
+1. **Log what the browser receives from the drag-and-drop/file input.** Log the first 10 file paths/names received. The browser's file upload API with `webkitdirectory` returns files with `webkitRelativePath` — log these to see the actual paths coming in. Example output we'd expect: `"H1892/H1892_1624.jpg"` or `"Parent folder/H1892/H1892_1624.jpg"`
+
+2. **Log what Key Codes are being extracted.** After parsing, log: `"Extracted Key Code: H1892 from path: H1892/H1892_1624.jpg, type: gallery"`
+
+3. **Log what Key Codes exist in the database.** Query the products table and log the first 10 key_code values. Also log the column name being queried (is it `key_code`, `keyCode`, `Key Code`, `KeyCode`?). Run: `SELECT DISTINCT key_code FROM products LIMIT 10` (or whatever the actual column name is)
+
+4. **Log the comparison.** `"Comparing extracted 'H1892' against DB key codes: ['H0851', 'H0852', ...] — match: true/false"`
+
+**The Key Code extraction logic should be:**
+- Get the file's relative path (e.g., `H1892/H1892_1624.jpg` or `H1892 details/H1892 details_151.jpg`)
+- Take the **first folder name** in the path
+- If that folder name contains "details", strip it: take everything before the space → `H1892`
+- Otherwise use the full folder name as the Key Code → `H1892`
+
+**Common issues to check:**
+- Is `webkitRelativePath` actually being read? Some implementations only read `file.name` and lose the folder structure
+- Is the database column named differently than expected?
+- Are Key Codes stored with different casing or extra whitespace in the DB?
+- Is the upload handler on the backend or fully client-side?
+
+After adding the debug logs, check the browser console and server logs, then fix whatever is causing the mismatch.
+
+---
+
+After pasting this, open the browser console (right-click → Inspect → Console) and try uploading again. The logs should tell us exactly where it's breaking. Share what you see and I can write the targeted fix.

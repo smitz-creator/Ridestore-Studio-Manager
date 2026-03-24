@@ -25,7 +25,9 @@ router.get("/pre-production/products", async (_req, res): Promise<void> => {
     .from(productsTable)
     .where(or(
       eq(productsTable.isCarryOver, true),
-      eq(productsTable.preProductionStatus, "reshoot")
+      eq(productsTable.preProductionStatus, "kept"),
+      eq(productsTable.preProductionStatus, "reshoot"),
+      eq(productsTable.preProductionStatus, "finalized")
     ));
 
   const productIds = products.map(p => p.id);
