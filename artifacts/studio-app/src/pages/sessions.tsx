@@ -597,7 +597,7 @@ export default function Sessions() {
     <Layout>
       <div className="space-y-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Studio Photo Shoots</h1>
+          <h1 className="text-2xl font-bold">Book Shoot</h1>
           <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" /> Book a Photo Shoot</Button>
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingSession(null); }}>
             <DialogContent className="sm:max-w-lg">
@@ -628,7 +628,7 @@ export default function Sessions() {
             </div>
 
             <div className="space-y-3">
-              <h2 className="text-lg font-semibold">Past Photo Shoots ({past.length})</h2>
+              <h2 className="text-lg font-semibold">Past Shoots ({past.length})</h2>
               {past.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No past photo shoots.</p>
               ) : (

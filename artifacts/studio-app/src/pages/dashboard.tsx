@@ -113,7 +113,7 @@ export default function Dashboard() {
           <div className="space-y-3">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              Upcoming Photo Shoots
+              Upcoming Shoots
             </h2>
             {dLoading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
@@ -138,7 +138,7 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold">Past Photo Shoots</h2>
+            <h2 className="text-lg font-semibold">Past Shoots</h2>
             {dLoading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
             ) : !dashboard?.past?.length ? (

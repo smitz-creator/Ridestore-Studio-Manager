@@ -27,9 +27,9 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/capture-sessions", label: "Capture Sessions", icon: Camera },
-  { href: "/sessions", label: "Photo Shoots", icon: Calendar },
   { href: "/planner", label: "Planner", icon: CalendarDays },
+  { href: "/sessions", label: "Book Shoot", icon: Calendar },
+  { href: "/capture-sessions", label: "Capture Sessions", icon: Camera },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

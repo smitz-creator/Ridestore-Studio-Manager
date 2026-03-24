@@ -404,7 +404,7 @@ export default function Planner() {
                                           cat.bg, cat.text, cat.border,
                                           b.linkedSessionId ? "cursor-default opacity-90" : "hover:opacity-80"
                                         )}
-                                        title={b.linkedSessionId ? `Synced from Photo Shoots` : b.label}
+                                        title={b.linkedSessionId ? `Synced from Book Shoot` : b.label}
                                       >
                                         {b.label}
                                       </button>
