@@ -75,6 +75,16 @@ export default function PreProduction() {
     });
   }, [products, brandFilter, genderFilter, typeFilter]);
 
+  const extractKeyCode = (fileName: string): string => {
+    const base = fileName.replace(/\.[^.]+$/, "");
+    const match = base.match(/^([^_\s]+)/);
+    return match ? match[1] : base;
+  };
+
+  const isDetailImage = (fileName: string): boolean => {
+    return /details/i.test(fileName);
+  };
+
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -84,14 +94,16 @@ export default function PreProduction() {
 
     try {
       const items = e.dataTransfer.items;
-      const fileEntries: { file: File; keyCode: string }[] = [];
+      const fileEntries: { file: File; keyCode: string; imageType: "gallery" | "detail" }[] = [];
 
-      const readEntry = (entry: FileSystemEntry, parentName: string): Promise<void> => {
+      const collectFiles = (entry: FileSystemEntry): Promise<void> => {
         return new Promise((resolve) => {
           if (entry.isFile) {
             (entry as FileSystemFileEntry).file((file) => {
               if (file.type === "image/jpeg" || file.name.toLowerCase().endsWith(".jpg") || file.name.toLowerCase().endsWith(".jpeg")) {
-                fileEntries.push({ file, keyCode: parentName });
+                const keyCode = extractKeyCode(file.name);
+                const imageType = isDetailImage(file.name) ? "detail" : "gallery";
+                fileEntries.push({ file, keyCode, imageType });
               }
               resolve();
             });
@@ -99,7 +111,7 @@ export default function PreProduction() {
             const reader = (entry as FileSystemDirectoryEntry).createReader();
             reader.readEntries(async (entries) => {
               for (const e of entries) {
-                await readEntry(e, entry.name);
+                await collectFiles(e);
               }
               resolve();
             });
@@ -113,15 +125,7 @@ export default function PreProduction() {
       for (let i = 0; i < items.length; i++) {
         const entry = items[i].webkitGetAsEntry();
         if (entry) {
-          if (entry.isDirectory) {
-            promises.push(readEntry(entry, entry.name));
-          } else if (entry.isFile) {
-            const file = items[i].getAsFile();
-            if (file && (file.type === "image/jpeg" || file.name.toLowerCase().endsWith(".jpg"))) {
-              const nameParts = file.name.replace(/\.[^.]+$/, "").split(/[_\-\s]/);
-              fileEntries.push({ file, keyCode: nameParts[0] });
-            }
-          }
+          promises.push(collectFiles(entry));
         }
       }
       await Promise.all(promises);
@@ -134,14 +138,11 @@ export default function PreProduction() {
 
       let matched = 0;
       let unmatched = 0;
+      const matchedProductIds = new Set<number>();
 
-      for (const { file, keyCode } of fileEntries) {
+      for (const { file, keyCode, imageType } of fileEntries) {
         const product = (products as any[]).find((p: any) =>
-          p.keyCode && (
-            p.keyCode.toLowerCase() === keyCode.toLowerCase() ||
-            keyCode.toLowerCase().includes(p.keyCode.toLowerCase()) ||
-            p.keyCode.toLowerCase().includes(keyCode.toLowerCase())
-          )
+          p.keyCode && p.keyCode.toLowerCase() === keyCode.toLowerCase()
         );
 
         if (!product) {
@@ -166,12 +167,21 @@ export default function PreProduction() {
             productId: product.id,
             objectPath,
             fileName: file.name,
-            imageType: "gallery",
+            imageType,
           });
 
           matched++;
+          matchedProductIds.add(product.id);
         } catch (err) {
           console.error("Upload error for", file.name, err);
+        }
+      }
+
+      if (matchedProductIds.size > 0) {
+        try {
+          await api.autoPopulateShots([...matchedProductIds]);
+        } catch (err) {
+          console.error("Auto-populate shots error", err);
         }
       }
 

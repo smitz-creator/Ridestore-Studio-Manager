@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, or } from "drizzle-orm";
 import { db, productsTable, preProductionImagesTable, projectsTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -23,7 +23,10 @@ router.get("/pre-production/products", async (_req, res): Promise<void> => {
       preProductionStatus: productsTable.preProductionStatus,
     })
     .from(productsTable)
-    .where(eq(productsTable.isCarryOver, true));
+    .where(or(
+      eq(productsTable.isCarryOver, true),
+      eq(productsTable.preProductionStatus, "reshoot")
+    ));
 
   const productIds = products.map(p => p.id);
   let images: any[] = [];
@@ -107,6 +110,103 @@ router.post("/pre-production/review", async (req, res): Promise<void> => {
   }
 
   res.json({ ok: true, decision });
+});
+
+const PRODUCT_TYPE_MAP: Record<string, string> = {
+  "snowboard jacket": "JACKET",
+  "snowboard pants": "PANTS",
+  "base layer pant": "BASELAYER",
+  "base layer top": "BASELAYER",
+  "fleece hoodie": "FLEECE",
+  "fleece sweater": "FLEECE",
+  "beanie": "BEANIE",
+  "facemask": "FACEMASK",
+  "ski gloves": "GLOVES",
+  "ski goggle": "GOGGLE",
+  "snow mittens": "MITTENS",
+  "replacement lens ski": "LENS",
+};
+
+const BRAND_MAP: Record<string, string> = {
+  "dope snow": "DOPE",
+  "montec": "MONTEC",
+};
+
+function getProductTypeShort(productType: string | null): string {
+  if (!productType) return "PRODUCT";
+  const key = productType.toLowerCase();
+  return PRODUCT_TYPE_MAP[key] || productType.toUpperCase().replace(/\s+/g, "");
+}
+
+function getBrandShort(brand: string): string {
+  const key = brand.toLowerCase();
+  return BRAND_MAP[key] || brand.toUpperCase().replace(/\s+/g, "");
+}
+
+router.post("/pre-production/auto-populate-shots", async (req, res): Promise<void> => {
+  const { productIds } = req.body;
+  if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+    res.status(400).json({ error: "Missing productIds array" });
+    return;
+  }
+
+  const products = await db
+    .select({
+      id: productsTable.id,
+      projectId: productsTable.projectId,
+      productType: productsTable.productType,
+    })
+    .from(productsTable)
+    .where(inArray(productsTable.id, productIds));
+
+  const images = await db
+    .select({
+      productId: preProductionImagesTable.productId,
+      imageType: preProductionImagesTable.imageType,
+    })
+    .from(preProductionImagesTable)
+    .where(inArray(preProductionImagesTable.productId, productIds));
+
+  const imagesByProduct = new Map<number, { hasGallery: boolean; hasDetail: boolean }>();
+  for (const img of images) {
+    const entry = imagesByProduct.get(img.productId) || { hasGallery: false, hasDetail: false };
+    if (img.imageType === "gallery") entry.hasGallery = true;
+    if (img.imageType === "detail") entry.hasDetail = true;
+    imagesByProduct.set(img.productId, entry);
+  }
+
+  const projectIds = [...new Set(products.map(p => p.projectId))];
+  let projects: any[] = [];
+  if (projectIds.length > 0) {
+    projects = await db.select({ id: projectsTable.id, brand: projectsTable.brand })
+      .from(projectsTable)
+      .where(inArray(projectsTable.id, projectIds));
+  }
+  const brandMap = new Map(projects.map((p: any) => [p.id, p.brand]));
+
+  let updated = 0;
+  for (const product of products) {
+    const imgInfo = imagesByProduct.get(product.id);
+    if (!imgInfo) continue;
+
+    const brand = brandMap.get(product.projectId) || "UNKNOWN";
+    const brandShort = getBrandShort(brand);
+    const typeShort = getProductTypeShort(product.productType);
+    const sessionName = `${brandShort}_${typeShort}_CARRYOVER`;
+
+    const updates: Record<string, any> = {};
+    if (imgInfo.hasGallery) updates.galleryShots = sessionName;
+    if (imgInfo.hasDetail) updates.detailsShots = sessionName;
+
+    if (Object.keys(updates).length > 0) {
+      await db.update(productsTable)
+        .set(updates)
+        .where(eq(productsTable.id, product.id));
+      updated++;
+    }
+  }
+
+  res.json({ ok: true, updated });
 });
 
 router.post("/pre-production/finalize", async (_req, res): Promise<void> => {

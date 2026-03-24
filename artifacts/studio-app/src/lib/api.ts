@@ -101,4 +101,6 @@ export const api = {
   finalizePreProduction: () => fetchJson("/pre-production/finalize", { method: "POST", body: JSON.stringify({}) }),
   requestUploadUrl: (data: { name: string; size: number; contentType: string }) =>
     fetchJson("/storage/uploads/request-url", { method: "POST", body: JSON.stringify(data) }),
+  autoPopulateShots: (productIds: number[]) =>
+    fetchJson("/pre-production/auto-populate-shots", { method: "POST", body: JSON.stringify({ productIds }) }),
 };

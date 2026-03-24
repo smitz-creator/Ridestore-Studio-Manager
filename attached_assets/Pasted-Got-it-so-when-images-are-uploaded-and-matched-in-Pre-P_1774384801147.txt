@@ -1,0 +1,31 @@
+Got it — so when images are uploaded and matched in Pre Production, the app should also automatically populate the Gallery Shots and Detail Shots fields on the product, and generate a session name. Updated prompt:
+
+Fix Pre Production image matching and auto-populate shot fields
+The image upload matching is failing because it's trying to match the full filename instead of extracting the Key Code from it.
+Image filename patterns:
+	•	Gallery: H1892_1624.jpg → Key Code is H1892
+	•	Details: H1892 details_151.jpg → Key Code is H1892
+The Key Code always starts with H followed by digits, and it's always the first part of the filename before either an underscore or a space.
+Fix the matching logic to:
+	1	Take each uploaded image filename
+	2	Extract the Key Code by grabbing everything before the first underscore OR first space (whichever comes first)
+	3	Match that Key Code against products in the database (case-insensitive)
+	4	Determine if the image is a gallery or details shot by checking if the filename contains the word "details" (case-insensitive)
+	5	Group all images per product, separated into gallery and details sets
+Auto-populate shot fields and session name:
+When images are successfully matched to a product:
+	•	If gallery images are found → populate the product's Gallery Shots field with a generated session name
+	•	If detail images are found → populate the product's Detail Shots field with the same session name
+Session name format: BRAND_PRODUCTTYPE_CARRYOVER
+Where:
+	•	BRAND = DOPE if the product belongs to the Dope Snow collection, MONTEC if it belongs to Montec
+	•	PRODUCTTYPE = the product type short name (JACKET, PANTS, BASELAYER, FLEECE, etc. — using the same short names already used in Shoot Mode session naming)
+Example: DOPE_JACKET_CARRYOVER or MONTEC_PANTS_CARRYOVER
+Example file matching:
+	•	H1892_1624.jpg → Gallery for H1892
+	•	H1892_1625.jpg → Gallery for H1892
+	•	H1892 details_151.jpg → Details for H1892
+	•	H1892 details_152.jpg → Details for H1892
+	•	H0863_1700.jpg → Gallery for H0863
+The detail shots should appear below the gallery shots when clicking the preview on the Pre Production page.
+
