@@ -75,15 +75,19 @@ export default function PreProduction() {
     });
   }, [products, brandFilter, genderFilter, typeFilter]);
 
-  const extractKeyCode = (fileName: string): string => {
-    const base = fileName.replace(/\.[^.]+$/, "");
-    const match = base.match(/^([^_\s]+)/);
-    return match ? match[1] : base;
+  const parseFolderName = (folderName: string): { keyCode: string; imageType: "gallery" | "detail" } => {
+    const lower = folderName.toLowerCase();
+    if (lower.includes("details")) {
+      const keyCode = folderName.split(/\s+/)[0];
+      return { keyCode, imageType: "detail" };
+    }
+    return { keyCode: folderName.trim(), imageType: "gallery" };
   };
 
-  const isDetailImage = (fileName: string): boolean => {
-    return /details/i.test(fileName);
-  };
+  const isJpeg = (file: File) =>
+    file.type === "image/jpeg" ||
+    file.name.toLowerCase().endsWith(".jpg") ||
+    file.name.toLowerCase().endsWith(".jpeg");
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -96,42 +100,68 @@ export default function PreProduction() {
       const items = e.dataTransfer.items;
       const fileEntries: { file: File; keyCode: string; imageType: "gallery" | "detail" }[] = [];
 
-      const collectFiles = (entry: FileSystemEntry): Promise<void> => {
+      const readDir = (dirEntry: FileSystemDirectoryEntry): Promise<FileSystemEntry[]> => {
         return new Promise((resolve) => {
-          if (entry.isFile) {
-            (entry as FileSystemFileEntry).file((file) => {
-              if (file.type === "image/jpeg" || file.name.toLowerCase().endsWith(".jpg") || file.name.toLowerCase().endsWith(".jpeg")) {
-                const keyCode = extractKeyCode(file.name);
-                const imageType = isDetailImage(file.name) ? "detail" : "gallery";
-                fileEntries.push({ file, keyCode, imageType });
+          const reader = dirEntry.createReader();
+          const allEntries: FileSystemEntry[] = [];
+          const readBatch = () => {
+            reader.readEntries((entries) => {
+              if (entries.length === 0) {
+                resolve(allEntries);
+              } else {
+                allEntries.push(...entries);
+                readBatch();
               }
-              resolve();
             });
-          } else if (entry.isDirectory) {
-            const reader = (entry as FileSystemDirectoryEntry).createReader();
-            reader.readEntries(async (entries) => {
-              for (const e of entries) {
-                await collectFiles(e);
-              }
-              resolve();
-            });
-          } else {
-            resolve();
-          }
+          };
+          readBatch();
         });
       };
 
-      const promises: Promise<void>[] = [];
+      const collectFromDir = async (dirEntry: FileSystemDirectoryEntry, keyCode: string, imageType: "gallery" | "detail") => {
+        const entries = await readDir(dirEntry);
+        for (const entry of entries) {
+          if (entry.isFile) {
+            const file = await new Promise<File>((resolve) => {
+              (entry as FileSystemFileEntry).file(resolve);
+            });
+            if (isJpeg(file)) {
+              fileEntries.push({ file, keyCode, imageType });
+            }
+          }
+        }
+      };
+
+      const topLevelPromises: Promise<void>[] = [];
+
       for (let i = 0; i < items.length; i++) {
         const entry = items[i].webkitGetAsEntry();
-        if (entry) {
-          promises.push(collectFiles(entry));
+        if (!entry) continue;
+
+        if (entry.isDirectory) {
+          const dirEntry = entry as FileSystemDirectoryEntry;
+          const subEntries = await readDir(dirEntry);
+
+          const hasSubDirs = subEntries.some(e => e.isDirectory);
+
+          if (hasSubDirs) {
+            for (const sub of subEntries) {
+              if (sub.isDirectory) {
+                const { keyCode, imageType } = parseFolderName(sub.name);
+                topLevelPromises.push(collectFromDir(sub as FileSystemDirectoryEntry, keyCode, imageType));
+              }
+            }
+          } else {
+            const { keyCode, imageType } = parseFolderName(dirEntry.name);
+            topLevelPromises.push(collectFromDir(dirEntry, keyCode, imageType));
+          }
         }
       }
-      await Promise.all(promises);
+
+      await Promise.all(topLevelPromises);
 
       if (fileEntries.length === 0) {
-        toast({ title: "No JPG images found in dropped items", variant: "destructive" });
+        toast({ title: "No JPG images found in dropped folders", variant: "destructive" });
         setUploading(false);
         return;
       }
@@ -233,9 +263,9 @@ export default function PreProduction() {
             <p className="text-sm text-primary font-medium">Uploading images...</p>
           ) : (
             <>
-              <p className="text-sm font-medium">Drag & drop folders here</p>
+              <p className="text-sm font-medium">Drag & drop product folders here</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Folders should be named with the product Key Code. JPG images inside will be matched automatically.
+                Drop a parent folder containing subfolders like H1892/ (gallery) and H1892 details/ (details). Images are matched by folder name.
               </p>
             </>
           )}

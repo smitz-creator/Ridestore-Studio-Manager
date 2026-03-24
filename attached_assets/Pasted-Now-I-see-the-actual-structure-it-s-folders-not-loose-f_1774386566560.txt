@@ -1,0 +1,36 @@
+Now I see the actual structure — it's **folders**, not loose files. The previous prompt assumed flat file uploads, but your structure is:
+
+- `H1892/` → folder containing gallery JPGs (like `H1892_1624.jpg`)
+- `H1892 details/` → folder containing detail JPGs (like `H1892 details_151.jpg`)
+
+So the matching logic needs to work at the **folder level**, not the file level:
+
+1. **Folder name** = Key Code for gallery (e.g., `H1892`)
+2. **Folder name with "details"** = detail shots (e.g., `H1892 details`)
+3. Extract Key Code from folder name: everything before the space (if it has "details") or the full folder name (if it's just the Key Code)
+
+The previous prompt was trying to parse filenames — that's why it matched zero. Let me rewrite:
+
+---
+
+**Fix Pre Production image upload — match by folder name, not filename**
+
+The drag-and-drop upload receives **folders**, not individual files. The folder structure is:
+
+- `H1892/` → contains gallery shot JPGs (e.g., `H1892_1624.jpg`, `H1892_1647.jpg`)
+- `H1892 details/` → contains detail shot JPGs (e.g., `H1892 details_151.jpg`, `H1892 details_152.jpg`)
+
+**Matching logic:**
+1. For each uploaded folder, check the **folder name**
+2. If the folder name is just a Key Code (e.g., `H1892`) → these are **gallery shots** for that product
+3. If the folder name contains "details" (e.g., `H1892 details`) → extract the Key Code by taking everything before the space → these are **detail shots** for that product
+4. Match the extracted Key Code against the `key_code` field in the products database (case-insensitive)
+5. All JPG files inside each folder belong to that product as either gallery or details
+
+**Also auto-populate shot fields on successful match:**
+- If gallery folder matched → set the product's **Gallery Shots** field to: `BRAND_PRODUCTTYPE Carry Over` (e.g., `DOPE_JACKET Carry Over`). Brand = DOPE for Dope Snow products, MONTEC for Montec products. Use existing product type short names.
+- If details folder matched → set the product's **Detail Shots** field to the same session name
+
+**Important:** Make sure the upload supports folder drag-and-drop with `webkitdirectory` or similar browser API to preserve the folder structure. The user will drag the parent folder containing all the Key Code subfolders.
+
+---

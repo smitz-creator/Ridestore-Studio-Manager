@@ -192,7 +192,7 @@ router.post("/pre-production/auto-populate-shots", async (req, res): Promise<voi
     const brand = brandMap.get(product.projectId) || "UNKNOWN";
     const brandShort = getBrandShort(brand);
     const typeShort = getProductTypeShort(product.productType);
-    const sessionName = `${brandShort}_${typeShort}_CARRYOVER`;
+    const sessionName = `${brandShort}_${typeShort} Carry Over`;
 
     const updates: Record<string, any> = {};
     if (imgInfo.hasGallery) updates.galleryShots = sessionName;
