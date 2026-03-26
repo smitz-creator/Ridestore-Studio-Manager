@@ -100,6 +100,7 @@ export default function ProjectDetail() {
     if (filters.delayed) p.delayed = "true";
     if (filters.reshoot) p.reshoot = "true";
     if (filters.shotMissing) p.shotMissing = filters.shotMissing;
+    if (filters.hasShots) p.hasShots = filters.hasShots;
     if (searchText.trim()) p.search = searchText.trim();
     return p;
   }, [id, filters, searchText]);
@@ -462,6 +463,19 @@ export default function ProjectDetail() {
                     <SelectItem value="details">Details</SelectItem>
                     <SelectItem value="misc">Misc</SelectItem>
                     <SelectItem value="carry_over">Carry Over</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Has Shots</Label>
+                <Select value={filters.hasShots || ""} onValueChange={v => setFilters(f => ({ ...f, hasShots: v === "all" ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="gallery">Gallery Shots</SelectItem>
+                    <SelectItem value="details">Detail Shots</SelectItem>
+                    <SelectItem value="misc">Misc Shots</SelectItem>
+                    <SelectItem value="any">Any Shots</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

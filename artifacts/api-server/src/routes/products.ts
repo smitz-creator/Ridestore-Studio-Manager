@@ -18,7 +18,7 @@ function isMissingRequired(product: { productType: string; galleryShots: string 
 const UPLOAD_AT_OR_BEYOND_READY = ["ready_for_upload", "uploaded"];
 
 router.get("/products", async (req, res): Promise<void> => {
-  const { projectId, gender, productType, shortname, deliveryStatus, uploadStatus, delayed, reshoot, shotMissing, search } = req.query;
+  const { projectId, gender, productType, shortname, deliveryStatus, uploadStatus, delayed, reshoot, shotMissing, hasShots, search } = req.query;
 
   const conditions: any[] = [];
 
@@ -49,6 +49,12 @@ router.get("/products", async (req, res): Promise<void> => {
       and(isJacketPants!, detailsEmpty!),
     ));
   }
+
+  const notEmpty = (col: any) => and(sql`${col} IS NOT NULL`, sql`trim(${col}) != ''`);
+  if (hasShots === "gallery") conditions.push(notEmpty(productsTable.galleryShots)!);
+  if (hasShots === "details") conditions.push(notEmpty(productsTable.detailsShots)!);
+  if (hasShots === "misc") conditions.push(notEmpty(productsTable.miscShots)!);
+  if (hasShots === "any") conditions.push(or(notEmpty(productsTable.galleryShots), notEmpty(productsTable.detailsShots), notEmpty(productsTable.miscShots))!);
 
   if (search) {
     const s = `%${search}%`;
