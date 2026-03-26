@@ -5,6 +5,19 @@ import { db, productsTable, preProductionImagesTable, projectsTable } from "@wor
 const router: IRouter = Router();
 
 router.get("/pre-production/products", async (_req, res): Promise<void> => {
+  const allImages = await db.select().from(preProductionImagesTable);
+  const imagesByProduct = new Map<number, any[]>();
+  for (const img of allImages) {
+    if (!imagesByProduct.has(img.productId)) imagesByProduct.set(img.productId, []);
+    imagesByProduct.get(img.productId)!.push(img);
+  }
+  const productIdsWithImages = [...imagesByProduct.keys()];
+
+  const conditions = [eq(productsTable.isCarryOver, true)];
+  if (productIdsWithImages.length > 0) {
+    conditions.push(inArray(productsTable.id, productIdsWithImages));
+  }
+
   const products = await db
     .select({
       id: productsTable.id,
@@ -23,27 +36,7 @@ router.get("/pre-production/products", async (_req, res): Promise<void> => {
       preProductionStatus: productsTable.preProductionStatus,
     })
     .from(productsTable)
-    .where(or(
-      eq(productsTable.isCarryOver, true),
-      eq(productsTable.preProductionStatus, "kept"),
-      eq(productsTable.preProductionStatus, "reshoot"),
-      eq(productsTable.preProductionStatus, "finalized")
-    ));
-
-  const productIds = products.map(p => p.id);
-  let images: any[] = [];
-  if (productIds.length > 0) {
-    images = await db
-      .select()
-      .from(preProductionImagesTable)
-      .where(inArray(preProductionImagesTable.productId, productIds));
-  }
-
-  const imagesByProduct = new Map<number, any[]>();
-  for (const img of images) {
-    if (!imagesByProduct.has(img.productId)) imagesByProduct.set(img.productId, []);
-    imagesByProduct.get(img.productId)!.push(img);
-  }
+    .where(or(...conditions));
 
   const projectIds = [...new Set(products.map(p => p.projectId))];
   let projects: any[] = [];
