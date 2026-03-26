@@ -1,0 +1,35 @@
+Updated prompt with your additions. Here's the full thing to paste into the Replit Agent:
+
+---
+
+**Three fixes + one new feature on the Pre Production page:**
+
+**1. Grid layout — match the gallery grid fix you already made:**
+- Use a proper 4-column CSS grid (`grid grid-cols-4`) with consistent spacing
+- Every cell should have a fixed **85:100 aspect ratio** matching the 1700×2000 photo dimensions
+- Images should use `object-contain` so nothing gets cropped — any extra space shows a dark background (`hsl(0 0% 10%)`) behind the image
+- Apply this to the product card grid on the Pre Production page
+
+**2. Image upload/display — not all images from dropped folders are showing:**
+- When a user drops a product folder (e.g. `H1892/` containing `H1892_1624.jpg`, `H1892_1647.jpg`, etc.), ALL images in that folder should be uploaded and stored — not just the first one
+- The folder structure is: `H1892/` (gallery images) and `H1892 details/` (detail images). Each folder contains 12-13 JPGs
+- Currently some products show broken/placeholder images even after folder upload. Make sure the upload handler processes every file in every subfolder recursively
+- Products that exist in the database but have no uploaded images should show a proper placeholder (not a broken image icon)
+
+**3. Preview image naming convention:**
+- The preview/thumbnail image for each product card should use the image ending in `_01` (e.g. `H1892_01.jpg`)
+- This is because carry over products already have their first image renamed to `SKU_01` format
+- When selecting which image to show as the card preview, look for the file ending in `_01` specifically
+
+**4. Upload progress bar:**
+- Add a visible progress bar during folder upload so the user can see how far along the upload is
+- Show something like "Uploading X/Y files..." with a visual progress indicator
+
+**5. Clear all existing uploaded images:**
+- Before anything else, clear/delete ALL currently uploaded pre-production images from the database and storage so we can do a fresh test from scratch
+
+Also check the API route (`artifacts/api-server/src/routes/pre-production.ts`) to make sure the upload endpoint handles all files in the dropped folders correctly. Run the app after changes.
+
+---
+
+Paste that into the Replit Agent and let it work. Want me to tweak anything?

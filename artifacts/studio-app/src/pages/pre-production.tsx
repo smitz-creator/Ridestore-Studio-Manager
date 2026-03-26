@@ -32,6 +32,7 @@ export default function PreProduction() {
   const [lightboxImages, setLightboxImages] = React.useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = React.useState(0);
   const [uploading, setUploading] = React.useState(false);
+  const [uploadProgress, setUploadProgress] = React.useState({ current: 0, total: 0 });
   const [showConfirm, setShowConfirm] = React.useState(false);
 
   const reviewMut = useMutation({
@@ -107,6 +108,7 @@ export default function PreProduction() {
 
     let matched = 0;
     let unmatched = 0;
+    let processed = 0;
     const matchedProductIds = new Set<number>();
     const unmatchedKeyCodes = new Set<string>();
 
@@ -119,7 +121,11 @@ export default function PreProduction() {
       console.error("Failed to resolve key codes", err);
     }
 
+    setUploadProgress({ current: 0, total: fileEntries.length });
+
     for (const { file, keyCode, imageType } of fileEntries) {
+      processed++;
+      setUploadProgress({ current: processed, total: fileEntries.length });
       const productId = resolvedProducts[keyCode.toLowerCase()];
 
       if (!productId) {
@@ -377,7 +383,20 @@ export default function PreProduction() {
         >
           <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
           {uploading ? (
-            <p className="text-sm text-primary font-medium">Uploading images...</p>
+            <div className="space-y-2 w-full max-w-xs mx-auto">
+              <p className="text-sm text-primary font-medium">
+                Uploading {uploadProgress.current}/{uploadProgress.total} files...
+              </p>
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-primary h-full rounded-full transition-all duration-200"
+                  style={{ width: `${uploadProgress.total > 0 ? (uploadProgress.current / uploadProgress.total) * 100 : 0}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {uploadProgress.total > 0 ? Math.round((uploadProgress.current / uploadProgress.total) * 100) : 0}% complete
+              </p>
+            </div>
           ) : (
             <>
               <p className="text-sm font-medium">Drag & drop product folders here or click to browse</p>
@@ -422,7 +441,7 @@ export default function PreProduction() {
                 const isKept = status === "kept" || status === "finalized";
                 const isReshoot = status === "reshoot";
                 const isFinalized = status === "finalized";
-                const firstImage = p.images?.[0];
+                const previewImage = p.images?.find((i: any) => /_01\.\w+$/i.test(i.fileName)) || p.images?.[0];
                 return (
                   <div key={p.id} className={cn(
                     "bg-card border rounded-lg overflow-hidden transition-all",
@@ -431,13 +450,14 @@ export default function PreProduction() {
                   )}>
                     <button
                       onClick={() => p.images?.length > 0 && openGallery(p)}
-                      className="w-full aspect-square bg-muted/30 flex items-center justify-center overflow-hidden"
+                      className="w-full bg-[hsl(0_0%_10%)] flex items-center justify-center overflow-hidden"
+                      style={{ aspectRatio: "85 / 100" }}
                     >
-                      {firstImage ? (
+                      {previewImage ? (
                         <img
-                          src={ImageUrl(firstImage.objectPath)}
+                          src={ImageUrl(previewImage.objectPath)}
                           alt={p.keyCode}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
                       ) : (
                         <ImageIcon className="w-10 h-10 text-muted-foreground/30" />

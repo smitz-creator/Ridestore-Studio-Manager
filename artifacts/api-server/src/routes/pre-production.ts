@@ -104,6 +104,11 @@ router.delete("/pre-production/images/:id", async (req, res): Promise<void> => {
   res.json({ ok: true });
 });
 
+router.post("/pre-production/clear-images", async (_req, res): Promise<void> => {
+  await db.delete(preProductionImagesTable);
+  res.json({ ok: true, cleared: true });
+});
+
 router.post("/pre-production/review", async (req, res): Promise<void> => {
   const { productId, decision } = req.body;
   if (!productId || !decision) {
