@@ -458,10 +458,10 @@ export default function PreProduction() {
                           src={ImageUrl(previewImage.objectPath)}
                           alt={p.keyCode}
                           className="w-full h-full object-contain"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).parentElement!.querySelector("svg")?.removeAttribute("style"); }}
                         />
-                      ) : (
-                        <ImageIcon className="w-10 h-10 text-muted-foreground/30" />
-                      )}
+                      ) : null}
+                      <ImageIcon className="w-10 h-10 text-muted-foreground/30" style={previewImage ? { display: "none" } : undefined} />
                     </button>
                     <div className="p-2 space-y-1.5">
                       <div className="flex items-center justify-between gap-1">
