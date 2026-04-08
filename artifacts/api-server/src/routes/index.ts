@@ -11,6 +11,7 @@ import retouchSessionsRouter from "./retouch-sessions";
 import plannerRouter from "./planner";
 import storageRouter from "./storage";
 import preProductionRouter from "./pre-production";
+import airtableSyncRouter from "./airtable-sync";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(retouchSessionsRouter);
 router.use(plannerRouter);
 router.use(storageRouter);
 router.use(preProductionRouter);
+router.use(airtableSyncRouter);
 
 export default router;
