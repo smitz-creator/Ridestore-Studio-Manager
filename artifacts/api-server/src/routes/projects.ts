@@ -5,32 +5,84 @@ import { db, projectsTable, productsTable } from "@workspace/db";
 const router: IRouter = Router();
 
 router.get("/projects", async (_req, res): Promise<void> => {
-  const projects = await db.select().from(projectsTable).orderBy(desc(projectsTable.updatedAt));
+  const projects = await db
+    .select()
+    .from(projectsTable)
+    .orderBy(desc(projectsTable.updatedAt));
+
   const rows = await db
     .select({
       projectId: productsTable.projectId,
       total: sql<number>`count(*)::int`,
-      uploaded: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'uploaded')::int`,
+
+      // New product status pipeline counts
+      notStarted: sql<number>`count(*) filter (where ${productsTable.productStatus} = 'Not Started')::int`,
+      sourced: sql<number>`count(*) filter (where ${productsTable.productStatus} = 'Sourced')::int`,
+      inStudio: sql<number>`count(*) filter (where ${productsTable.productStatus} = 'In Studio')::int`,
+      selection: sql<number>`count(*) filter (where ${productsTable.productStatus} = 'Selection')::int`,
+      retouch: sql<number>`count(*) filter (where ${productsTable.productStatus} = 'Retouch')::int`,
+      postProduction: sql<number>`count(*) filter (where ${productsTable.productStatus} = 'Post Production')::int`,
+      naming: sql<number>`count(*) filter (where ${productsTable.productStatus} = 'Naming')::int`,
+      readyToUpload: sql<number>`count(*) filter (where ${productsTable.productStatus} = 'Ready to Upload')::int`,
+      uploaded: sql<number>`count(*) filter (where ${productsTable.productStatus} = 'Uploaded')::int`,
+
+      // Shot coverage
+      hasGallery: sql<number>`count(*) filter (where ${productsTable.galleryShot} is not null and ${productsTable.galleryShot} != '')::int`,
+      hasDetails: sql<number>`count(*) filter (where ${productsTable.detailShot} is not null and ${productsTable.detailShot} != '')::int`,
+      hasMisc: sql<number>`count(*) filter (where ${productsTable.miscShot} is not null and ${productsTable.miscShot} != '')::int`,
+
+      // Delivery
+      carryOvers: sql<number>`count(*) filter (where ${productsTable.isCarryOver} = true)::int`,
+
+      // Legacy counts (for old Excel projects)
+      legacyUploaded: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'uploaded')::int`,
       delayed: sql<number>`count(*) filter (where ${productsTable.factoryDelayed} = true)::int`,
-      notStarted: sql<number>`count(*) filter (where ${productsTable.uploadStatus} not in ('uploaded', 'ready_for_retouch', 'in_post_production', 'post_production_done', 'ready_for_upload', 'in_the_studio', 'ready_for_selection'))::int`,
-      inTheStudio: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'in_the_studio')::int`,
-      readyForSelection: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'ready_for_selection')::int`,
-      readyForRetouch: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'ready_for_retouch')::int`,
-      inPostProduction: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'in_post_production')::int`,
-      postProductionDone: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'post_production_done')::int`,
-      readyForUpload: sql<number>`count(*) filter (where ${productsTable.uploadStatus} = 'ready_for_upload')::int`,
-      hasGallery: sql<number>`count(*) filter (where ${productsTable.galleryShots} is not null and ${productsTable.galleryShots} != '')::int`,
-      hasDetails: sql<number>`count(*) filter (where ${productsTable.detailsShots} is not null and ${productsTable.detailsShots} != '')::int`,
-      hasMisc: sql<number>`count(*) filter (where ${productsTable.miscShots} is not null and ${productsTable.miscShots} != '')::int`,
     })
     .from(productsTable)
     .groupBy(productsTable.projectId);
-  const defaultStats = { total: 0, uploaded: 0, delayed: 0, notStarted: 0, inTheStudio: 0, readyForSelection: 0, readyForRetouch: 0, inPostProduction: 0, postProductionDone: 0, readyForUpload: 0, hasGallery: 0, hasDetails: 0, hasMisc: 0 };
+
+  const defaultStats = {
+    total: 0,
+    notStarted: 0,
+    sourced: 0,
+    inStudio: 0,
+    selection: 0,
+    retouch: 0,
+    postProduction: 0,
+    naming: 0,
+    readyToUpload: 0,
+    uploaded: 0,
+    hasGallery: 0,
+    hasDetails: 0,
+    hasMisc: 0,
+    carryOvers: 0,
+    legacyUploaded: 0,
+    delayed: 0,
+  };
+
   const stats: Record<number, typeof defaultStats> = {};
   for (const r of rows) {
-    stats[r.projectId] = { total: r.total, uploaded: r.uploaded, delayed: r.delayed, notStarted: r.notStarted, inTheStudio: r.inTheStudio, readyForSelection: r.readyForSelection, readyForRetouch: r.readyForRetouch, inPostProduction: r.inPostProduction, postProductionDone: r.postProductionDone, readyForUpload: r.readyForUpload, hasGallery: r.hasGallery, hasDetails: r.hasDetails, hasMisc: r.hasMisc };
+    stats[r.projectId] = {
+      total: r.total,
+      notStarted: r.notStarted,
+      sourced: r.sourced,
+      inStudio: r.inStudio,
+      selection: r.selection,
+      retouch: r.retouch,
+      postProduction: r.postProduction,
+      naming: r.naming,
+      readyToUpload: r.readyToUpload,
+      uploaded: r.uploaded,
+      hasGallery: r.hasGallery,
+      hasDetails: r.hasDetails,
+      hasMisc: r.hasMisc,
+      carryOvers: r.carryOvers,
+      legacyUploaded: r.legacyUploaded,
+      delayed: r.delayed,
+    };
   }
-  const result = projects.map(p => ({
+
+  const result = projects.map((p) => ({
     ...p,
     stats: stats[p.id] || defaultStats,
   }));
@@ -38,41 +90,85 @@ router.get("/projects", async (_req, res): Promise<void> => {
 });
 
 router.post("/projects", async (req, res): Promise<void> => {
-  const { name, brand, season } = req.body;
+  const { name, brand, season, dataSource, airtableBaseId, airtableTableId } =
+    req.body;
   if (!name || !brand || !season) {
     res.status(400).json({ error: "name, brand, and season are required" });
     return;
   }
-  const [project] = await db.insert(projectsTable).values({ name, brand, season }).returning();
+  const values: Record<string, any> = { name, brand, season };
+  if (dataSource) values.dataSource = dataSource;
+  if (airtableBaseId) values.airtableBaseId = airtableBaseId;
+  if (airtableTableId) values.airtableTableId = airtableTableId;
+
+  const [project] = await db
+    .insert(projectsTable)
+    .values(values)
+    .returning();
   res.status(201).json(project);
 });
 
 router.get("/projects/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, id));
-  if (!project) { res.status(404).json({ error: "Not found" }); return; }
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [project] = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.id, id));
+  if (!project) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
   res.json(project);
 });
 
 router.patch("/projects/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const allowedFields = ["name", "brand", "season"] as const;
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const allowedFields = [
+    "name",
+    "brand",
+    "season",
+    "dataSource",
+    "airtableBaseId",
+    "airtableTableId",
+  ] as const;
   const updates: Record<string, any> = {};
   for (const key of allowedFields) {
     if (key in req.body) updates[key] = req.body[key];
   }
-  const [project] = await db.update(projectsTable).set(updates).where(eq(projectsTable.id, id)).returning();
-  if (!project) { res.status(404).json({ error: "Not found" }); return; }
+  const [project] = await db
+    .update(projectsTable)
+    .set(updates)
+    .where(eq(projectsTable.id, id))
+    .returning();
+  if (!project) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
   res.json(project);
 });
 
 router.delete("/projects/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const [project] = await db.delete(projectsTable).where(eq(projectsTable.id, id)).returning();
-  if (!project) { res.status(404).json({ error: "Not found" }); return; }
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [project] = await db
+    .delete(projectsTable)
+    .where(eq(projectsTable.id, id))
+    .returning();
+  if (!project) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
   res.sendStatus(204);
 });
 
