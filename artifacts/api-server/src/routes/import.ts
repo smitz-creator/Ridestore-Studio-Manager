@@ -61,7 +61,7 @@ function parseSeason(filename: string): string {
   return "";
 }
 
-function parseSheetProducts(sheet: XLSX.WorkSheet, projectId: number) {
+function parseSheetProducts(sheet: XLSX.WorkSheet, projectId: number, brandFromSheet?: string) {
   const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
   if (rows.length === 0) return { products: [], skipped: 0, rowCount: 0 };
 
@@ -95,29 +95,36 @@ function parseSheetProducts(sheet: XLSX.WorkSheet, projectId: number) {
 
     const gender = getField(row, "GENDER", "Gender") || "Unisex";
     const deliveryRaw = getField(row, "DELIVERY STATUS", "DELIVERY_STATUS", "Delivery Status", "DELIVERY");
-    const uploadRaw = getField(row, "UPLOADED", "Upload Status", "UPLOAD STATUS");
+    const uploadRaw = getField(row, "UPLOADED", "Upload Status", "UPLOAD STATUS", "Pictures Upload");
 
     products.push({
       projectId,
       gender,
       productType: productType || "Unknown",
       shortname: shortname || "Unknown",
+      brand: brandFromSheet || "",
       style: getField(row, "STYLE", "Style") || null,
       design: getField(row, "DESIGN", "Design") || null,
       keyCode: getField(row, "KEY", "KEY CODE", "KEY_CODE", "Key Code", "KEYCODE") || null,
       colour: getField(row, "COLOUR", "COLOR", "Colour", "Color") || null,
-      galleryShots: getField(row, "GALLERY SHOT", "GALLERY SHOTS", "GALLERY_SHOT", "Gallery Shot") || null,
-      detailsShots: getField(row, "DETAILS SHOT", "DETAILS SHOTS", "DETAIL SHOT", "DETAILS_SHOT", "Details Shot") || null,
-      miscShots: getField(row, "INSIDE PICS TAKEN", "INSIDE_PICS_TAKEN", "MISC SHOTS", "MISC", "Inside Pics Taken") || null,
+      // New column names (gallery_shot, detail_shot, misc_shot)
+      galleryShot: getField(row, "GALLERY SHOT", "GALLERY SHOTS", "GALLERY_SHOT", "Gallery Shot") || null,
+      detailShot: getField(row, "DETAILS SHOT", "DETAILS SHOTS", "DETAIL SHOT", "DETAILS_SHOT", "Details Shot", "Detail Shot") || null,
+      miscShot: getField(row, "INSIDE PICS TAKEN", "INSIDE_PICS_TAKEN", "MISC SHOTS", "MISC", "Inside Pics Taken", "Misc Shot") || null,
+      studioNotes: getField(row, "COMMENT ON PICTURES", "Comment on Pictures", "Studio Notes") || null,
+      reviewSb: getField(row, "REVIEW COMMENTS SB", "Review Comments SB", "Review Snowboard") || null,
+      reviewSki: getField(row, "REVIEW COMMENTS SKI", "Review Comments SKI", "Review SKI") || null,
       deliveryStatus: normalizeDeliveryStatus(deliveryRaw),
       factoryDelayed: normalizeDeliveryStatus(deliveryRaw) === "delayed_at_factory",
       uploadStatus: normalizeUploadStatus(uploadRaw),
+      productStatus: "Not Started",
     });
   }
 
   return { products, skipped, rowCount: rows.length };
 }
 
+// --- Preview ---
 router.post("/import/preview", upload.single("file"), async (req, res): Promise<void> => {
   if (!req.file) { res.status(400).json({ error: "No file uploaded" }); return; }
 
@@ -141,6 +148,7 @@ router.post("/import/preview", upload.single("file"), async (req, res): Promise<
   res.json({ sheets, detectedSeason, filename: req.file.originalname });
 });
 
+// --- Execute import (creates projects per sheet) ---
 router.post("/import/execute", upload.single("file"), async (req, res): Promise<void> => {
   if (!req.file) { res.status(400).json({ error: "No file uploaded" }); return; }
 
@@ -172,8 +180,13 @@ router.post("/import/execute", upload.single("file"), async (req, res): Promise<
     const brand = SHEET_TO_BRAND[sheetName.toUpperCase()] || sheetName;
     const projectName = `${brand} ${season}`;
 
-    const [project] = await db.insert(projectsTable).values({ name: projectName, brand, season }).returning();
-    const { products, skipped } = parseSheetProducts(sheet, project.id);
+    const [project] = await db.insert(projectsTable).values({
+      name: projectName,
+      brand,
+      season,
+      dataSource: "excel",
+    }).returning();
+    const { products, skipped } = parseSheetProducts(sheet, project.id, brand);
 
     let imported = 0;
     if (products.length > 0) {
@@ -187,6 +200,7 @@ router.post("/import/execute", upload.single("file"), async (req, res): Promise<
   res.json({ results });
 });
 
+// --- Import into existing project ---
 router.post("/projects/:id/import", upload.single("file"), async (req, res): Promise<void> => {
   const projectId = parseInt(req.params.id);
   if (isNaN(projectId)) { res.status(400).json({ error: "Invalid project id" }); return; }
@@ -219,7 +233,7 @@ router.post("/projects/:id/import", upload.single("file"), async (req, res): Pro
     return;
   }
 
-  const { products, skipped } = parseSheetProducts(sheet, projectId);
+  const { products, skipped } = parseSheetProducts(sheet, projectId, project.brand);
 
   if (products.length === 0) {
     res.status(400).json({ error: "No valid products found in the sheet" });
